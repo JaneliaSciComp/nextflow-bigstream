@@ -6,7 +6,7 @@ import bigstream.n5_utils as n5_utils
 from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
-from bigstream.piecewise_align import distributed_piecewise_alignment_pipeline
+from bigstream.distributed_align import distributed_alignment_pipeline
 from bigstream.piecewise_transform import distributed_apply_transform
 
 
@@ -114,9 +114,9 @@ def _define_args():
                              default='ransac,deform',
                              type=_stringlist,
                              help='High res registration steps: (ransac,deform)')
-    args_parser.add_argument('--highres-blocksize', dest='highres_blocksize',
-                             default=[128,]*3,
-                             type=_intlist,
+    args_parser.add_argument('--highres-partitionsize', dest='highres_partitionsize',
+                             default=128,
+                             type=int,
                              help='High blocksize for partitioning the work')
 
     args_parser.add_argument('--dask-scheduler', dest='dask_scheduler',
@@ -202,19 +202,19 @@ def _run_highres_alignment(fix_data,
                            fix_spacing,
                            mov_spacing,
                            steps,
-                           blocksize,
+                           partitionsize,
                            transforms_list,
                            output_dir,
                            cluster):
-    print('Run high res alignment:', steps, blocksize)
+    print('Run high res alignment:', steps, partitionsize)
     deform_output = output_dir + '/deformed.zarr'
-    deform = distributed_piecewise_alignment_pipeline(
+    deform = distributed_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         steps,
-        blocksize=blocksize,
+        partitionsize,
         static_transform_list=transforms_list,
-        write_path=deform_output,
+        output_container=deform_output,
         cluster=cluster,
     )
 
@@ -222,7 +222,7 @@ def _run_highres_alignment(fix_data,
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         transform_list=transforms_list + [deform],
-        blocksize=blocksize,
+        blocksize=partitionsize,
         write_path=deform_output,
         cluster=cluster,
     )
@@ -302,7 +302,7 @@ if __name__ == '__main__':
         fix_highres_voxel_spacing,
         mov_highres_voxel_spacing,
         highres_steps,
-        args.highres_blocksize,
+        args.highres_partitionsize,
         [lowres_transform,],
         args.output_dir,
         cluster

@@ -1,5 +1,5 @@
 process BIGSTREAM {
-    container { dask_cluster_params.container }
+    container { params.container }
     containerOptions { get_runtime_opts([inputPath]) }
 
     memory { "${params.mem_gb} GB" }

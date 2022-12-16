@@ -4,11 +4,11 @@ include {
 
 include {
     get_mounted_vols_opts
-} from '../utils'
+} from './utils'
 
 def dask_params() {
     default_dask_params() +
     [
-        container: 'registry.int.janelia.org/janeliascicomp/n5-tools-py:1.1.0',
+        container: 'bigstream:1.0',
     ]
 }
