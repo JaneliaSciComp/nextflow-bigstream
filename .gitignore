@@ -1,0 +1,11 @@
+# Backup files
+*.bak
+*.swp
+*~
+
+# Nextflow working dirs
+.nextflow*
+work
+
+# local files
+local
