@@ -1,0 +1,3 @@
+[submodule "external-modules/dask"]
+	path = external-modules/dask
+	url = git@github.com:JaneliaSciComp/nextflow-dask.git
