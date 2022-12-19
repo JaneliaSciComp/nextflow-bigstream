@@ -56,36 +56,55 @@ def _define_args():
 
     ransac_args = args_parser.add_argument_group(
         description='Ransac arguments')
-    ransac_args.add_argument('--ransac-blob-sizes',
+    ransac_args.add_argument('--lowres-ransac-blob-sizes',
                              metavar='s1,s2,...,sn',
-                             dest='ransac_blob_sizes', type=_intlist,
+                             dest='lowres_ransac_blob_sizes', type=_intlist,
                              default=[6, 20])
-    ransac_args.add_argument('--ransac-threshold',
-                             dest='ransac_threshold', type=float)
-    ransac_args.add_argument('--ransac-confidence', dest='ransac_confidence',
-                             type=float)
 
-    affine_args = args_parser.add_argument_group(
-        description='Affine arguments')
-    affine_args.add_argument('--affine-shrink-factors', dest='affine_shrink_factors',
-                             metavar='sf1,...,sfn',
-                             type=_inttuple, default=(2,), help='Shrink factors')
-    affine_args.add_argument('--affine-smooth-sigmas', dest='affine_smooth_sigmas',
-                             metavar='s1,...,sn',
-                             type=_floattuple, help='Smoothing sigmas')
-    affine_args.add_argument('--affine-learning-rate', dest='affine_learning_rate',
-                             type=float, default=0.25, help='Learning rate')
-    affine_args.add_argument('--affine-min-step', dest='affine_min_step',
-                             type=float, default=0., help='Minimum step')
-    affine_args.add_argument('--affine-iterations', dest='affine_iterations',
-                             type=int, default=400,
-                             help='Number of iterations')
+    lowres_affine_args = args_parser.add_argument_group(
+        description='Low resolution affine arguments')
+    lowres_affine_args.add_argument('--lowres-affine-shrink-factors',
+                                    dest='lowres_affine_shrink_factors',
+                                    metavar='sf1,...,sfn',
+                                    type=_inttuple, default=(2,), help='Shrink factors')
+    lowres_affine_args.add_argument('--lowres-affine-smooth-sigmas',
+                                    dest='lowres_affine_smooth_sigmas',
+                                    metavar='s1,...,sn',
+                                    type=_floattuple, help='Smoothing sigmas')
+    lowres_affine_args.add_argument('--lowres-affine-learning-rate',
+                                    dest='lowres_affine_learning_rate',
+                                    type=float, default=0.25, help='Learning rate')
+    lowres_affine_args.add_argument('--lowres-affine-min-step',
+                                    dest='lowres_affine_min_step',
+                                    type=float, default=0., help='Minimum step')
+    lowres_affine_args.add_argument('--lowres-affine-iterations',
+                                    dest='lowres_affine_iterations',
+                                    type=int, default=400,
+                                    help='Number of iterations')
+
+    highres_affine_args = args_parser.add_argument_group(
+        description='High resolution affine arguments')
+    highres_affine_args.add_argument('--highres-affine-shrink-factors',
+                                     dest='highres_affine_shrink_factors',
+                                     metavar='sf1,...,sfn',
+                                     type=_inttuple, default=(2,), help='Shrink factors')
+    highres_affine_args.add_argument('--highres-affine-smooth-sigmas',
+                                     dest='highres_affine_smooth_sigmas',
+                                     metavar='s1,...,sn',
+                                     type=_floattuple, help='Smoothing sigmas')
+    highres_affine_args.add_argument('--highres-affine-learning-rate',
+                                     dest='highres_affine_learning_rate',
+                                     type=float, default=0.25, help='Learning rate')
+    highres_affine_args.add_argument('--highres-affine-min-step',
+                                     dest='highres_affine_min_step',
+                                     type=float, default=0., help='Minimum step')
+    highres_affine_args.add_argument('--highres-affine-iterations',
+                                    dest='highres_affine_iterations',
+                                    type=int, default=400,
+                                    help='Number of iterations')
 
     deform_args = args_parser.add_argument_group(
         description='Deform arguments')
-    deform_args.add_argument('--deform-smooth-sigmas', dest='deform_smooth_sigmas',
-                             metavar='s1,...,sn',
-                             type=_floattuple, help='Smoothing sigmas')
     deform_args.add_argument('--deform-control-point-spacing',
                              dest='deform_control_point_spacing',
                              type=float, default=50.,
@@ -95,13 +114,6 @@ def _define_args():
                              metavar='s1,...,sn',
                              type=_inttuple, default=(1,),
                              help='Control point levels')
-    deform_args.add_argument('--deform-learning-rate', dest='deform_learning_rate',
-                             type=float, default=0.25, help='Learning rate')
-    deform_args.add_argument('--deform-min-step', dest='deform_min_step',
-                             type=float, default=0., help='Minimum step')
-    deform_args.add_argument('--deform-iterations', dest='deform_iterations',
-                             type=int, default=25,
-                             help='Number of iterations')
 
     args_parser.add_argument('--output-dir', dest='output_dir',
                              required=True,

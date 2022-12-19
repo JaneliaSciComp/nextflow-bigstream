@@ -1,14 +1,13 @@
 include {
-    default_dask_params
-} from '../external-modules/dask/lib/dask_params'
+    dask_params
+} from './dask_params'
 
 include {
-    get_mounted_vols_opts
-} from './utils'
+    bigstream_params
+} from './bigstream_params'
 
-def dask_params() {
-    default_dask_params() +
-    [
-        container: 'bigstream:1.0',
-    ]
+def default_params(Map ps) {
+    dask_params() +
+    bigstream_params() +
+    ps
 }
