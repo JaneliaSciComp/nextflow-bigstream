@@ -3,12 +3,10 @@
 nextflow.enable.dsl=2
 
 include {
-    default_params
+    default_params;
 } from './lib/param_utils'
 
-log.info "Registration main script."
-
-def final_params = default_params(params)
+final_params = default_params(params)
 
 include {
     BIGSTREAM_REGISTRATION
