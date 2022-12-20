@@ -41,7 +41,6 @@ class _ArgsHelper:
 def _define_args(global_ransac_descriptor,
                  global_affine_descriptor,
                  local_ransac_descriptor,
-                 local_affine_descriptor,
                  local_deform_descriptor):
     args_parser = argparse.ArgumentParser(description='Registration pipeline')
     args_parser.add_argument('--fixed-lowres', dest='fixed_lowres',
@@ -101,9 +100,6 @@ def _define_args(global_ransac_descriptor,
     _define_ransac_args(args_parser.add_argument_group(
         description='Local ransac arguments'),
         local_ransac_descriptor)
-    _define_affine_args(args_parser.add_argument_group(
-        description='Local affine arguments'),
-        local_affine_descriptor)
     _define_deform_args(args_parser.add_argument_group(
         description='Local deform arguments'),
         local_deform_descriptor)
@@ -164,6 +160,8 @@ def _define_deform_args(deform_args, args):
                              metavar='s1,...,sn',
                              type=_inttuple, default=(1,),
                              help='Control point levels')
+    # deform args are actually a superset of affine args
+    _define_affine_args(deform_args, args)
 
 
 def _extract_ransac_args(argdescriptor, args):
@@ -176,6 +174,11 @@ def _extract_ransac_args(argdescriptor, args):
 
 def _extract_affine_args(argdescriptor, args):
     affine_args = {'optimizer_args': {}}
+    _extract_affine_args_to(argdescriptor, args, affine_args)
+    return affine_args
+
+
+def _extract_affine_args_to(argdescriptor, args, affine_args):
     if hasattr(args, argdescriptor._argdest('affine_shrink_factors')):
         affine_args['shrink_factors'] = getattr(
             args, argdescriptor._argdest('affine_shrink_factors'))
@@ -191,11 +194,11 @@ def _extract_affine_args(argdescriptor, args):
     if hasattr(args, argdescriptor._argdest('affine_iterations')):
         affine_args['optimizer_args']['numberOfIterations'] = getattr(
             args, argdescriptor._argdest('affine_iterations'))
-    return affine_args
 
 
 def _extract_deform_args(argdescriptor, args):
     deform_args = {'optimizer_args': {}}
+    _extract_affine_args_to(argdescriptor, args, deform_args)
     if hasattr(args, argdescriptor._argdest('deform_control_point_spacing')):
         deform_args['control_point_spacing'] = getattr(
             args, argdescriptor._argdest('deform_control_point_spacing'))
@@ -267,12 +270,10 @@ if __name__ == '__main__':
     global_affine_descriptor = _ArgsHelper('global')
 
     local_ransac_descriptor = _ArgsHelper('local')
-    local_affine_descriptor = _ArgsHelper('local')
     local_deform_descriptor = _ArgsHelper('local')
     args_parser = _define_args(global_ransac_descriptor,
                                global_affine_descriptor,
                                local_ransac_descriptor,
-                               local_affine_descriptor,
                                local_deform_descriptor)
     args = args_parser.parse_args()
     print('Registration:', args)
@@ -332,7 +333,6 @@ if __name__ == '__main__':
 
     args_for_local_steps = {
         'ransac': _extract_ransac_args(local_ransac_descriptor, args),
-        'affine': _extract_affine_args(local_affine_descriptor, args),
         'deform': _extract_deform_args(local_deform_descriptor, args),
     }
 
