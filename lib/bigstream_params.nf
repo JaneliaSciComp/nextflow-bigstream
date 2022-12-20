@@ -2,12 +2,22 @@ def bigstream_params() {
     [
         bigstream_container: 'bigstream:1.0',
         // global alignment (low res) parameters
-        lowres_ransac_blob_sizes: '6,20',
-        lowres_affine_sigmas: '2.5',
-        lowres_affine_iterations: 400,
+        global_steps: 'ransac,affine',
+        global_ransac_blob_sizes: '6,20',
+        global_shrink_factors: '2',
+        global_smooth_sigmas: 2.5,
+        global_learning_rate: 0.25,
+        global_min_step: 0.,
+        global_iterations: 400,
         // local alignment (high res) parameters
-        highres_ransac_blob_sizes: '6,20',
-        highres_affine_sigmas: '2.5',
-        highres_affine_iterations: 25,
+        partition_blocksize: 128,
+        local_steps: 'ransac,deform',
+        local_ransac_blob_sizes: '6,20',
+        local_control_point_spacing: 50.,
+        control_point_levels: '1',
+        local_smooth_sigmas: 0.25,
+        local_learning_rate: 0.25,
+        local_min_step: 0.,
+        local_iterations: 25,
     ]
 }

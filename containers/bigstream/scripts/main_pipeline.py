@@ -3,27 +3,41 @@ import numpy as np
 import nrrd
 import bigstream.n5_utils as n5_utils
 
+from os.path import exists
 from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
 from bigstream.distributed_align import distributed_alignment_pipeline
+from bigstream.piecewise_align import distributed_piecewise_alignment_pipeline
 from bigstream.piecewise_transform import distributed_apply_transform
 
 
 def _inttuple(arg):
-    return tuple([int(d) for d in arg.split(',')])
+    if arg is not None and arg.strip():
+        return tuple([int(d) for d in arg.split(',')])
+    else:
+        return ()
 
 
 def _floattuple(arg):
-    return tuple([float(d) for d in arg.split(',')])
+    if arg is not None and arg.strip():
+        return tuple([float(d) for d in arg.split(',')])
+    else:
+        return ()
 
 
 def _stringlist(arg):
-    return list(filter(lambda x: x, [s.strip() for s in arg.split(',')]))
+    if arg is not None and arg.strip():
+        return list(filter(lambda x: x, [s.strip() for s in arg.split(',')]))
+    else:
+        return []
 
 
 def _intlist(arg):
-    return [int(d) for d in arg.split(',')]
+    if arg is not None and arg.strip():
+        return [int(d) for d in arg.split(',')]
+    else:
+        return []
 
 
 class _ArgsHelper:
@@ -68,6 +82,11 @@ def _define_args(global_ransac_descriptor,
     args_parser.add_argument('--moving-highres-subpath',
                              dest='moving_highres_subpath',
                              help='Moving high resolution subpath')
+
+    args_parser.add_argument('--use-existing-global-transform',
+                             dest='use_existing_global_transform',
+                             action='store_true',
+                             help='If set use an existing global transform')
 
     args_parser.add_argument('--output-dir',
                              dest='output_dir',
@@ -125,38 +144,37 @@ def _define_ransac_args(ransac_args, args):
 
 
 def _define_affine_args(affine_args, args):
-    affine_args.add_argument(args._argflag('affine-shrink-factors'),
-                             dest=args._argdest('affine_shrink_factors'),
+    affine_args.add_argument(args._argflag('shrink-factors'),
+                             dest=args._argdest('shrink_factors'),
                              metavar='sf1,...,sfn',
-                             type=_inttuple, default=(2,),
-                             help='Affine shrink factors')
-    affine_args.add_argument(args._argflag('affine-smooth-sigmas'),
-                             dest=args._argdest('affine_smooth_sigmas'),
+                             type=_inttuple, default=None,
+                             help='Shrink factors')
+    affine_args.add_argument(args._argflag('smooth-sigmas'),
+                             dest=args._argdest('smooth_sigmas'),
                              metavar='s1,...,sn',
                              type=_floattuple,
-                             help='Affine smoothing sigmas')
-    affine_args.add_argument(args._argflag('affine-learning-rate'),
-                             dest=args._argdest('affine_learning_rate'),
+                             help='Smoothing sigmas')
+    affine_args.add_argument(args._argflag('learning-rate'),
+                             dest=args._argdest('learning_rate'),
                              type=float, default=0.25,
-                             help='Affine learning rate')
-    affine_args.add_argument(args._argflag('affine-min-step'),
-                             dest=args._argdest('affine_min_step'),
+                             help='Learning rate')
+    affine_args.add_argument(args._argflag('min-step'),
+                             dest=args._argdest('min_step'),
                              type=float, default=0.,
-                             help='Affine minimum step')
-    affine_args.add_argument(args._argflag('affine-iterations'),
-                             dest=args._argdest('affine_iterations'),
-                             type=int, default=400,
-                             help='Affine iterations')
+                             help='Minimum step')
+    affine_args.add_argument(args._argflag('iterations'),
+                             dest=args._argdest('iterations'),
+                             type=int, default=100,
+                             help='Number of iterations')
 
 
 def _define_deform_args(deform_args, args):
-    deform_args.add_argument(args._argflag('deform-control-point-spacing'),
-                             dest=args._argdest(
-                                 'deform_control_point_spacing'),
+    deform_args.add_argument(args._argflag('control-point-spacing'),
+                             dest=args._argdest('control_point_spacing'),
                              type=float, default=50.,
                              help='Control point spacing')
-    deform_args.add_argument(args._argflag('deform-control-point-levels'),
-                             dest=args._argdest('deform_control_point_levels'),
+    deform_args.add_argument(args._argflag('control-point-levels'),
+                             dest=args._argdest('control_point_levels'),
                              metavar='s1,...,sn',
                              type=_inttuple, default=(1,),
                              help='Control point levels')
@@ -164,47 +182,52 @@ def _define_deform_args(deform_args, args):
     _define_affine_args(deform_args, args)
 
 
-def _extract_ransac_args(argdescriptor, args):
+def _check_attr(args, argdescriptor, argname):
+    attr_value = getattr(args, argdescriptor._argdest(argname), None)
+    return attr_value is not None
+
+
+def _extract_ransac_args(args, argdescriptor):
     ransac_args = {}
-    if hasattr(args, argdescriptor._argdest('blob_sizes')):
+    if _check_attr(args, argdescriptor, 'blob_sizes'):
         ransac_args['blob_sizes'] = getattr(
             args, argdescriptor._argdest('blob_sizes'))
     return ransac_args
 
 
-def _extract_affine_args(argdescriptor, args):
+def _extract_affine_args(args, argdescriptor):
     affine_args = {'optimizer_args': {}}
-    _extract_affine_args_to(argdescriptor, args, affine_args)
+    _extract_affine_args_to(args, argdescriptor, affine_args)
     return affine_args
 
 
-def _extract_affine_args_to(argdescriptor, args, affine_args):
-    if hasattr(args, argdescriptor._argdest('affine_shrink_factors')):
+def _extract_affine_args_to(args, argdescriptor, affine_args):
+    if _check_attr(args, argdescriptor, 'shrink_factors'):
         affine_args['shrink_factors'] = getattr(
-            args, argdescriptor._argdest('affine_shrink_factors'))
-    if hasattr(args, argdescriptor._argdest('affine_smooth_sigmas')):
+            args, argdescriptor._argdest('shrink_factors'))
+    if _check_attr(args, argdescriptor, 'smooth_sigmas'):
         affine_args['smooth_sigmas'] = getattr(
-            args, argdescriptor._argdest('affine_smooth_sigmas'))
-    if hasattr(args, argdescriptor._argdest('affine_learning_rate')):
+            args, argdescriptor._argdest('smooth_sigmas'))
+    if _check_attr(args, argdescriptor, 'learning_rate'):
         affine_args['optimizer_args']['learningRate'] = getattr(
-            args, argdescriptor._argdest('affine_learning_rate'))
-    if hasattr(args, argdescriptor._argdest('affine_min_step')):
+            args, argdescriptor._argdest('learning_rate'))
+    if _check_attr(args, argdescriptor, 'min_step'):
         affine_args['optimizer_args']['minStep'] = getattr(
-            args, argdescriptor._argdest('affine_min_step'))
-    if hasattr(args, argdescriptor._argdest('affine_iterations')):
+            args, argdescriptor._argdest('min_step'))
+    if _check_attr(args, argdescriptor, 'iterations'):
         affine_args['optimizer_args']['numberOfIterations'] = getattr(
-            args, argdescriptor._argdest('affine_iterations'))
+            args, argdescriptor._argdest('iterations'))
 
 
-def _extract_deform_args(argdescriptor, args):
+def _extract_deform_args(args, argdescriptor):
     deform_args = {'optimizer_args': {}}
-    _extract_affine_args_to(argdescriptor, args, deform_args)
-    if hasattr(args, argdescriptor._argdest('deform_control_point_spacing')):
+    _extract_affine_args_to(args, argdescriptor, deform_args)
+    if _check_attr(args, argdescriptor, 'control_point_spacing'):
         deform_args['control_point_spacing'] = getattr(
-            args, argdescriptor._argdest('deform_control_point_spacing'))
-    if hasattr(args, argdescriptor._argdest('deform_control_point_levels')):
+            args, argdescriptor._argdest('control_point_spacing'))
+    if _check_attr(args, argdescriptor, 'control_point_levels'):
         deform_args['control_point_levels'] = getattr(
-            args, argdescriptor._argdest('deform_control_point_levels'))
+            args, argdescriptor._argdest('control_point_levels'))
     return deform_args
 
 
@@ -249,7 +272,7 @@ def _run_highres_alignment(fix_data,
         steps,
         partitionsize,
         static_transform_list=transforms_list,
-        output_container=deform_output,
+        write_path=deform_output,
         cluster=cluster,
     )
 
@@ -279,8 +302,8 @@ if __name__ == '__main__':
     print('Registration:', args)
 
     args_for_global_steps = {
-        'ransac': _extract_ransac_args(global_ransac_descriptor, args),
-        'affine': _extract_affine_args(global_affine_descriptor, args),
+        'ransac': _extract_ransac_args(args, global_ransac_descriptor),
+        'affine': _extract_affine_args(args, global_affine_descriptor),
     }
 
     global_steps = [(s, args_for_global_steps.get(s, {}))
@@ -317,26 +340,33 @@ if __name__ == '__main__':
     print('Moving highres volume attributes:',
           mov_highres_ldata.shape, mov_highres_voxel_spacing)
 
-    lowres_transform, lowres_alignment = _run_lowres_alignment(
-        fix_lowres_ldata[...],  # read image in memory
-        mov_lowres_ldata[...],
-        fix_lowres_voxel_spacing,
-        mov_lowres_voxel_spacing,
-        global_steps)
+    lowres_transform_file = args.output_dir + '/affine.mat'
 
-    # save the lowres transformation
-    np.savetxt(args.output_dir + '/affine.mat', lowres_transform)
+    if (args.use_existing_global_transform and
+        exists(lowres_transform_file)):
+        print('Read global transform from', lowres_transform_file)
+        lowres_transform = np.loadtxt(lowres_transform_file)
+    else:
+        lowres_transform, lowres_alignment = _run_lowres_alignment(
+            fix_lowres_ldata[...],  # read image in memory
+            mov_lowres_ldata[...],
+            fix_lowres_voxel_spacing,
+            mov_lowres_voxel_spacing,
+            global_steps)
 
-    if (args.debug):
-        nrrd.write(args.output_dir + '/affine.nrrd',
-                   lowres_alignment.transpose(2, 1, 0), compression_level=2)
+        # save the lowres transformation
+        np.savetxt(lowres_transform_file, lowres_transform)
+
+        if (args.debug):
+            nrrd.write(args.output_dir + '/affine.nrrd',
+                    lowres_alignment.transpose(2, 1, 0), compression_level=2)
 
     args_for_local_steps = {
-        'ransac': _extract_ransac_args(local_ransac_descriptor, args),
-        'deform': _extract_deform_args(local_deform_descriptor, args),
+        'ransac': _extract_ransac_args(args, local_ransac_descriptor),
+        'deform': _extract_deform_args(args, local_deform_descriptor),
     }
 
-    print('Run global registration with:', args_for_global_steps)
+    print('Run local registration with:', args_for_local_steps)
 
     local_steps = [(s, args_for_local_steps.get(s, {}))
                      for s in args.local_registration_steps]
