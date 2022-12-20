@@ -333,7 +333,7 @@ if __name__ == '__main__':
     args_for_local_steps = {
         'ransac': _extract_ransac_args(local_ransac_descriptor, args),
         'affine': _extract_affine_args(local_affine_descriptor, args),
-        'deform': _extract_affine_args(local_deform_descriptor, args),
+        'deform': _extract_deform_args(local_deform_descriptor, args),
     }
 
     print('Run global registration with:', args_for_global_steps)
