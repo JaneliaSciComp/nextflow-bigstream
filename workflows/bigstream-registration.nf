@@ -16,7 +16,8 @@ workflow BIGSTREAM_REGISTRATION {
                        //  fixed_highres, fixed_highres_dataset, moving_highres, moving_highres_dataset,
                        //  output, output_dataset]
 
-    start_cluster
+    main:
+    start_cluster()
     | combine(registration_input)
     | map {
         def (cluster_id, scheduler_ip, cluster_work_dir, connected_workers,
