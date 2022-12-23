@@ -115,6 +115,11 @@ def _define_args(global_ransac_descriptor,
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
+    args_parser.add_argument('--local-transform-name',
+                             dest='local_transform_name',
+                             default='deformed.zarr',
+                             type=str,
+                             help='Local transform name')
 
     _define_ransac_args(args_parser.add_argument_group(
         description='Local ransac arguments'),
@@ -263,9 +268,10 @@ def _run_highres_alignment(fix_data,
                            partitionsize,
                            transforms_list,
                            output_dir,
+                           output_dataset,
                            cluster):
     print('Run high res alignment:', steps, partitionsize)
-    deform_output = output_dir + '/deformed.zarr'
+    deform_output = output_dir + '/' + output_dataset
     deform = distributed_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
@@ -385,5 +391,6 @@ if __name__ == '__main__':
         args.partition_blocksize,
         [lowres_transform,],
         args.output_dir,
+        args.local_transform_name,
         cluster
     )

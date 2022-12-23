@@ -2,6 +2,7 @@ def bigstream_params() {
     [
         bigstream_container: 'bigstream:1.0',
         // global alignment (low res) parameters
+        global_use_existing_transform: false, // if global transform already exists use it
         global_steps: 'ransac,affine',
         global_ransac_blob_sizes: '6,20',
         global_shrink_factors: '2',
