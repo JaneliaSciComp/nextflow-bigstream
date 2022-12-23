@@ -12,8 +12,8 @@ process BIGSTREAM {
         output_path
     ]) }
 
-    memory { "${params.mem_gb} GB" }
-    cpus { params.cpus }
+    memory { "${params.bigstream_mem_gb} GB" }
+    cpus { params.bigstream_cpus }
 
     input:
     tuple val(fixed_lowres_path), val(fixed_lowres_subpath),
