@@ -3,7 +3,7 @@ include {
 } from '../../lib/utils'
 
 process BIGSTREAM {
-    container { params.container }
+    container { params.bigstream_container }
     containerOptions { get_runtime_opts([
         fixed_lowres_path,
         moving_lowres_path,
