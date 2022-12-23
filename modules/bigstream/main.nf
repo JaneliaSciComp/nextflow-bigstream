@@ -9,7 +9,7 @@ process BIGSTREAM {
         moving_lowres_path,
         fixed_highres_path,
         moving_highres_path,
-        output_path
+        file(output_path).parent
     ]) }
 
     memory { "${params.bigstream_mem_gb} GB" }
@@ -38,14 +38,19 @@ process BIGSTREAM {
         ? '--use-existing-global-transform'
         : ''
     """
+    umask 0002
+    mkdir -p ${output_path}
     python /app/bigstream/scripts/main_pipeline.py \
         --fixed-lowres ${fixed_lowres_path} \
         --fixed-lowres-subpath ${fixed_lowres_subpath} \
-        --fixed-highres-subpath ${fixed_highres_path} \
         --moving-lowres ${moving_lowres_path} \
         --moving-lowres-subpath ${moving_lowres_subpath} \
+        --fixed-highres ${fixed_highres_path} \
+        --fixed-highres-subpath ${fixed_highres_subpath} \
+        --moving-highres ${moving_highres_path} \
         --moving-highres-subpath ${moving_highres_subpath} \
         --output-dir ${output_path} \
+        --local-transform-name ${output_subpath} \
         ${use_existing_global_transform} \
         --partition-blocksize ${params.partition_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
