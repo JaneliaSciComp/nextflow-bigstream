@@ -241,7 +241,7 @@ def _run_lowres_alignment(fix_data,
                           fix_spacing,
                           mov_spacing,
                           steps):
-    print('Run low res alignment:', steps)
+    print('Run low res alignment:', steps, flush=True)
 
     affine = alignment_pipeline(fix_data,
                                 mov_data,
@@ -249,7 +249,7 @@ def _run_lowres_alignment(fix_data,
                                 mov_spacing,
                                 steps)
 
-    print('Apply affine transform')
+    print('Apply affine transform', flush=True)
     # apply transform
     aligned = apply_transform(fix_data,
                               mov_data,
@@ -270,7 +270,7 @@ def _run_highres_alignment(fix_data,
                            output_dir,
                            output_dataset,
                            cluster):
-    print('Run high res alignment:', steps, partitionsize)
+    print('Run high res alignment:', steps, partitionsize, flush=True)
     deform_output = output_dir + '/' + output_dataset
     deform = distributed_alignment_pipeline(
         fix_data, mov_data,
@@ -305,7 +305,7 @@ if __name__ == '__main__':
                                local_ransac_descriptor,
                                local_deform_descriptor)
     args = args_parser.parse_args()
-    print('Registration:', args)
+    print('Registration:', args, flush=True)
 
     args_for_global_steps = {
         'ransac': _extract_ransac_args(args, global_ransac_descriptor),
@@ -315,7 +315,8 @@ if __name__ == '__main__':
     global_steps = [(s, args_for_global_steps.get(s, {}))
                     for s in args.global_registration_steps]
 
-    print('Run global registration with:', args, args_for_global_steps)
+    print('Run global registration with:', args, args_for_global_steps,
+          flush=True)
 
     # Read the the lowres inputs
     fix_lowres_ldata, fix_lowres_attrs = n5_utils.open(
@@ -337,20 +338,20 @@ if __name__ == '__main__':
     mov_highres_voxel_spacing = n5_utils.get_voxel_spacing(mov_highres_attrs)
 
     print('Fixed lowres volume attributes:',
-          fix_lowres_ldata.shape, fix_lowres_voxel_spacing)
+          fix_lowres_ldata.shape, fix_lowres_voxel_spacing, flush=True)
     print('Moving lowres volume attributes:',
-          mov_lowres_ldata.shape, mov_lowres_voxel_spacing)
+          mov_lowres_ldata.shape, mov_lowres_voxel_spacing, flush=True)
 
     print('Fixed highres volume attributes:',
-          fix_highres_ldata.shape, fix_highres_voxel_spacing)
+          fix_highres_ldata.shape, fix_highres_voxel_spacing, flush=True)
     print('Moving highres volume attributes:',
-          mov_highres_ldata.shape, mov_highres_voxel_spacing)
+          mov_highres_ldata.shape, mov_highres_voxel_spacing, flush=True)
 
     lowres_transform_file = args.output_dir + '/affine.mat'
 
     if (args.use_existing_global_transform and
         exists(lowres_transform_file)):
-        print('Read global transform from', lowres_transform_file)
+        print('Read global transform from', lowres_transform_file, flush=True)
         lowres_transform = np.loadtxt(lowres_transform_file)
     else:
         lowres_transform, lowres_alignment = _run_lowres_alignment(
@@ -372,7 +373,7 @@ if __name__ == '__main__':
         'deform': _extract_deform_args(args, local_deform_descriptor),
     }
 
-    print('Run local registration with:', args_for_local_steps)
+    print('Run local registration with:', args_for_local_steps, flush=True)
 
     local_steps = [(s, args_for_local_steps.get(s, {}))
                      for s in args.local_registration_steps]
