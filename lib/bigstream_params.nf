@@ -20,7 +20,7 @@ def bigstream_params() {
         local_learning_rate: 0.25,
         local_min_step: 0,
         local_iterations: 25,
-        bigstream_cpus: 2,
+        bigstream_cpus: 1,
         bigstream_mem_gb: 2,
     ]
 }
