@@ -52,10 +52,7 @@ class _ArgsHelper:
         return '{}_{}'.format(self._prefix, argname)
 
 
-def _define_args(global_ransac_descriptor,
-                 global_affine_descriptor,
-                 local_ransac_descriptor,
-                 local_deform_descriptor):
+def _define_args(global_descriptor, local_descriptor):
     args_parser = argparse.ArgumentParser(description='Registration pipeline')
     args_parser.add_argument('--fixed-lowres', dest='fixed_lowres',
                              required=True,
@@ -94,22 +91,29 @@ def _define_args(global_ransac_descriptor,
                              help='Output directory')
     args_parser.add_argument('--global-registration-steps',
                              dest='global_registration_steps',
-                             default='ransac,affine',
                              type=_stringlist,
-                             help='Global (lowres) registration steps')
+                             help='Global (lowres) registration steps, e.g. ransac,affine')
+    args_parser.add_argument('--global-transform-name',
+                             dest='global_transform_name',
+                             default='affine-transform.mat',
+                             type=str,
+                             help='Global transform name')
+    args_parser.add_argument('--global-aligned-name',
+                             dest='global_aligned_name',
+                             type=str,
+                             help='Global aligned name')
 
     _define_ransac_args(args_parser.add_argument_group(
         description='Global ransac arguments'),
-        global_ransac_descriptor)
+        global_descriptor)
     _define_affine_args(args_parser.add_argument_group(
         description='Global affine arguments'),
-        global_affine_descriptor)
+        global_descriptor)
 
     args_parser.add_argument('--local-registration-steps',
                              dest='local_registration_steps',
-                             default='ransac,deform',
                              type=_stringlist,
-                             help='Local (highres) registration steps')
+                             help='Local (highres) registration steps, .e.g. ransac,deform')
     args_parser.add_argument('--partition-blocksize',
                              dest='partition_blocksize',
                              default=128,
@@ -117,16 +121,20 @@ def _define_args(global_ransac_descriptor,
                              help='blocksize for splitting the work')
     args_parser.add_argument('--local-transform-name',
                              dest='local_transform_name',
-                             default='deformed.zarr',
+                             default='deform-transform',
                              type=str,
                              help='Local transform name')
+    args_parser.add_argument('--local-aligned-name',
+                             dest='local_aligned_name',
+                             type=str,
+                             help='Local aligned name')
 
     _define_ransac_args(args_parser.add_argument_group(
         description='Local ransac arguments'),
-        local_ransac_descriptor)
+        local_descriptor)
     _define_deform_args(args_parser.add_argument_group(
         description='Local deform arguments'),
-        local_deform_descriptor)
+        local_descriptor)
 
     args_parser.add_argument('--dask-scheduler', dest='dask_scheduler',
                              type=str, default=None,
@@ -236,19 +244,69 @@ def _extract_deform_args(args, argdescriptor):
     return deform_args
 
 
+def _run_global_registration(args, steps):
+    if args.global_transform_name:
+        lowres_transform_file = (args.output_dir + '/' + 
+                                 args.global_transform_name)
+    else:
+        lowres_transform_file = None
+
+    if (args.use_existing_global_transform and
+        lowres_transform_file and
+            exists(lowres_transform_file)):
+        print('Read global transform from', lowres_transform_file, flush=True)
+        lowres_transform = np.loadtxt(lowres_transform_file)
+    elif steps:
+        print('Run global registration with:', args, steps, flush=True)
+        # Read the the lowres inputs
+        fix_lowres_ldata, fix_lowres_attrs = n5_utils.open(
+            args.fixed_lowres, args.fixed_lowres_subpath)
+        mov_lowres_ldata, mov_lowres_attrs = n5_utils.open(
+            args.moving_lowres, args.moving_lowres_subpath)
+        fix_lowres_voxel_spacing = n5_utils.get_voxel_spacing(fix_lowres_attrs)
+        mov_lowres_voxel_spacing = n5_utils.get_voxel_spacing(mov_lowres_attrs)
+
+        print('Fixed lowres volume attributes:',
+              fix_lowres_ldata.shape, fix_lowres_voxel_spacing, flush=True)
+        print('Moving lowres volume attributes:',
+              mov_lowres_ldata.shape, mov_lowres_voxel_spacing, flush=True)
+
+        lowres_transform, lowres_alignment = _run_lowres_alignment(
+            fix_lowres_ldata[...],  # read image in memory
+            mov_lowres_ldata[...],
+            fix_lowres_voxel_spacing,
+            mov_lowres_voxel_spacing,
+            steps)
+
+        if lowres_transform_file:
+            # save the lowres transformation
+            np.savetxt(lowres_transform_file, lowres_transform)
+
+        if args.global_aligned_name:
+            lowres_aligned_file = (args.output_dir + '/' + 
+                                   args.global_aligned_name)
+            # for now save it as nrrd
+            nrrd.write(lowres_aligned_file,
+                       lowres_alignment.transpose(2, 1, 0),
+                       compression_level=2)
+    else:
+        print('Skip global alignment because no global steps were specified.')
+        lowres_transform = None
+
+    return lowres_transform
+
+
 def _run_lowres_alignment(fix_data,
                           mov_data,
                           fix_spacing,
                           mov_spacing,
                           steps):
     print('Run low res alignment:', steps, flush=True)
-
     affine = alignment_pipeline(fix_data,
                                 mov_data,
                                 fix_spacing,
                                 mov_spacing,
                                 steps)
-
     print('Apply affine transform', flush=True)
     # apply transform
     aligned = apply_transform(fix_data,
@@ -260,6 +318,50 @@ def _run_lowres_alignment(fix_data,
     return affine, aligned
 
 
+def _run_local_registration(args, steps, global_transform):
+    if steps:
+        print('Run local registration with:', steps, flush=True)
+
+        # Read the highres inputs - if highres is not defined default it to lowres
+        fix_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
+        mov_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
+
+        fix_highres_ldata, fix_highres_attrs = n5_utils.open(
+            fix_highres_path, args.fixed_highres_subpath)
+        mov_highres_ldata, mov_highres_attrs = n5_utils.open(
+            mov_highres_path, args.moving_highres_subpath)
+        fix_highres_voxel_spacing = n5_utils.get_voxel_spacing(
+            fix_highres_attrs)
+        mov_highres_voxel_spacing = n5_utils.get_voxel_spacing(
+            mov_highres_attrs)
+
+        print('Fixed highres volume attributes:',
+              fix_highres_ldata.shape, fix_highres_voxel_spacing, flush=True)
+        print('Moving highres volume attributes:',
+              mov_highres_ldata.shape, mov_highres_voxel_spacing, flush=True)
+
+        if args.dask_scheduler:
+            cluster = remote_cluster(args.dask_scheduler)
+        else:
+            cluster = local_cluster()
+
+        _run_highres_alignment(
+            fix_highres_ldata,
+            mov_highres_ldata,
+            fix_highres_voxel_spacing,
+            mov_highres_voxel_spacing,
+            steps,
+            args.partition_blocksize,
+            [global_transform] if global_transform is not None else [],
+            args.output_dir,
+            args.local_transform_name,
+            args.local_aligned_name,
+            cluster
+        )
+    else:
+        print('Skip local alignment because no local steps were specified.')
+
+
 def _run_highres_alignment(fix_data,
                            mov_data,
                            fix_spacing,
@@ -268,17 +370,21 @@ def _run_highres_alignment(fix_data,
                            partitionsize,
                            transforms_list,
                            output_dir,
-                           output_dataset,
+                           highres_transform_name,
+                           highres_aligned_name,
                            cluster):
     print('Run high res alignment:', steps, partitionsize, flush=True)
-    deform_output = output_dir + '/' + output_dataset
+    if highres_transform_name:
+        deform_transform_output = output_dir + '/' + highres_transform_name
+    else:
+        deform_transform_output = None
     deform = distributed_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         steps,
         partitionsize,
         static_transform_list=transforms_list,
-        write_path=deform_output,
+        write_path=deform_transform_output,
         cluster=cluster,
     )
 
@@ -287,111 +393,40 @@ def _run_highres_alignment(fix_data,
         fix_spacing, mov_spacing,
         transform_list=transforms_list + [deform],
         blocksize=partitionsize,
-        write_path=deform_output,
+        write_path=output_dir if highres_aligned_name else None,
+        dataset_path=highres_aligned_name,
         cluster=cluster,
     )
-
     return deform, aligned
 
 
 if __name__ == '__main__':
-    global_ransac_descriptor = _ArgsHelper('global')
-    global_affine_descriptor = _ArgsHelper('global')
-
-    local_ransac_descriptor = _ArgsHelper('local')
-    local_deform_descriptor = _ArgsHelper('local')
-    args_parser = _define_args(global_ransac_descriptor,
-                               global_affine_descriptor,
-                               local_ransac_descriptor,
-                               local_deform_descriptor)
+    global_descriptor = _ArgsHelper('global')
+    local_descriptor = _ArgsHelper('local')
+    args_parser = _define_args(global_descriptor, local_descriptor)
     args = args_parser.parse_args()
-    print('Registration:', args, flush=True)
+    print('Invoked registration:', args, flush=True)
 
-    args_for_global_steps = {
-        'ransac': _extract_ransac_args(args, global_ransac_descriptor),
-        'affine': _extract_affine_args(args, global_affine_descriptor),
-    }
-
-    global_steps = [(s, args_for_global_steps.get(s, {}))
-                    for s in args.global_registration_steps]
-
-    print('Run global registration with:', args, args_for_global_steps,
-          flush=True)
-
-    # Read the the lowres inputs
-    fix_lowres_ldata, fix_lowres_attrs = n5_utils.open(
-        args.fixed_lowres, args.fixed_lowres_subpath)
-    mov_lowres_ldata, mov_lowres_attrs = n5_utils.open(
-        args.moving_lowres, args.moving_lowres_subpath)
-    fix_lowres_voxel_spacing = n5_utils.get_voxel_spacing(fix_lowres_attrs)
-    mov_lowres_voxel_spacing = n5_utils.get_voxel_spacing(mov_lowres_attrs)
-
-    # Read the highres inputs - if highres is not defined default it to lowres
-    fix_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
-    mov_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
-
-    fix_highres_ldata, fix_highres_attrs = n5_utils.open(
-        fix_highres_path, args.fixed_highres_subpath)
-    mov_highres_ldata, mov_highres_attrs = n5_utils.open(
-        mov_highres_path, args.moving_highres_subpath)
-    fix_highres_voxel_spacing = n5_utils.get_voxel_spacing(fix_highres_attrs)
-    mov_highres_voxel_spacing = n5_utils.get_voxel_spacing(mov_highres_attrs)
-
-    print('Fixed lowres volume attributes:',
-          fix_lowres_ldata.shape, fix_lowres_voxel_spacing, flush=True)
-    print('Moving lowres volume attributes:',
-          mov_lowres_ldata.shape, mov_lowres_voxel_spacing, flush=True)
-
-    print('Fixed highres volume attributes:',
-          fix_highres_ldata.shape, fix_highres_voxel_spacing, flush=True)
-    print('Moving highres volume attributes:',
-          mov_highres_ldata.shape, mov_highres_voxel_spacing, flush=True)
-
-    lowres_transform_file = args.output_dir + '/affine.mat'
-
-    if (args.use_existing_global_transform and
-        exists(lowres_transform_file)):
-        print('Read global transform from', lowres_transform_file, flush=True)
-        lowres_transform = np.loadtxt(lowres_transform_file)
+    if args.global_registration_steps:
+        args_for_global_steps = {
+            'ransac': _extract_ransac_args(args, global_descriptor),
+            'affine': _extract_affine_args(args, global_descriptor),
+        }
+        global_steps = [(s, args_for_global_steps.get(s, {}))
+                        for s in args.global_registration_steps]
     else:
-        lowres_transform, lowres_alignment = _run_lowres_alignment(
-            fix_lowres_ldata[...],  # read image in memory
-            mov_lowres_ldata[...],
-            fix_lowres_voxel_spacing,
-            mov_lowres_voxel_spacing,
-            global_steps)
+        global_steps = []
 
-        # save the lowres transformation
-        np.savetxt(lowres_transform_file, lowres_transform)
+    global_transform = _run_global_registration(args, global_steps)
 
-        if (args.debug):
-            nrrd.write(args.output_dir + '/affine.nrrd',
-                    lowres_alignment.transpose(2, 1, 0), compression_level=2)
-
-    args_for_local_steps = {
-        'ransac': _extract_ransac_args(args, local_ransac_descriptor),
-        'deform': _extract_deform_args(args, local_deform_descriptor),
-    }
-
-    print('Run local registration with:', args_for_local_steps, flush=True)
-
-    local_steps = [(s, args_for_local_steps.get(s, {}))
-                     for s in args.local_registration_steps]
-
-    if args.dask_scheduler:
-        cluster = remote_cluster(args.dask_scheduler)
+    if args.local_registration_steps:
+        args_for_local_steps = {
+            'ransac': _extract_ransac_args(args, local_descriptor),
+            'deform': _extract_deform_args(args, local_descriptor),
+        }
+        local_steps = [(s, args_for_local_steps.get(s, {}))
+                       for s in args.local_registration_steps]
     else:
-        cluster = local_cluster()
+        local_steps = []
 
-    _run_highres_alignment(
-        fix_highres_ldata,
-        mov_highres_ldata,
-        fix_highres_voxel_spacing,
-        mov_highres_voxel_spacing,
-        local_steps,
-        args.partition_blocksize,
-        [lowres_transform,],
-        args.output_dir,
-        args.local_transform_name,
-        cluster
-    )
+    _run_local_registration(args, local_steps, global_transform)

@@ -17,6 +17,7 @@ workflow BIGSTREAM_REGISTRATION {
                        //  output, output_dataset]
 
     main:
+
     start_cluster()
     | combine(registration_input)
     | map {

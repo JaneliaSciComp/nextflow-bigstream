@@ -7,7 +7,7 @@ workflow stop_cluster {
     work_dir
 
     main:
-    if (params.with_dask_cluster) {
+    if (params.with_dask_cluster && params.local_steps) {
         done = DASK_CLUSTER_TERMINATE(work_dir)
     } else {
         done = work_dir

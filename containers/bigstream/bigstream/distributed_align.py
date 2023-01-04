@@ -401,6 +401,9 @@ def distributed_alignment_pipeline(
         process memory, set this parameter to a location where the transform
         can be written to disk as a zarr file.
 
+    output_chunk_size: integer (default: 128)
+        Chunk size for the output container
+
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
         arguments for specific steps e.g. `random_kwargs` etc.
@@ -501,34 +504,59 @@ def distributed_alignment_pipeline(
     # establish all keyword arguments
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
-    # large alignments that spills over to disk
-    written = [False,] * len(indices)
-    running = [False,] * len(indices)
-    locked = [False,] * len(indices)
-    submit_remaining_blocks = partial(
-        _submit_new_blocks_to_align,
-        indices,
-        partition_dims,
-        overlaps,
-        fix_zarr, mov_zarr,
-        fix_spacing, mov_spacing,
-        fix_mask_zarr, mov_mask_zarr,
-        steps,
-        static_transform_list,
-        output_transform,
-        zarr_blocks,
-        written, running, locked,
-        cluster.client
-    )
-    futures, future_indices = submit_remaining_blocks()
-    completed_futures = as_completed(futures)
-    for future in completed_futures:
-        iii = future_indices[future.key]
-        written[iii] = True
-        running[iii] = False
-        locked = _get_locks(running, all_blocks_coords, zarr_blocks)
-        new_futures, new_future_indices = submit_remaining_blocks()
-        completed_futures.update(new_futures)
-        future_indices = {**future_indices, **new_future_indices}
+    if write_path:
+        # large alignments that spills over to disk
+        written = [False,] * len(indices)
+        running = [False,] * len(indices)
+        locked = [False,] * len(indices)
+        submit_remaining_blocks = partial(
+            _submit_new_blocks_to_align,
+            indices,
+            partition_dims,
+            overlaps,
+            fix_zarr, mov_zarr,
+            fix_spacing, mov_spacing,
+            fix_mask_zarr, mov_mask_zarr,
+            steps,
+            static_transform_list,
+            output_transform,
+            zarr_blocks,
+            written, running, locked,
+            cluster.client
+        )
+        futures, future_indices = submit_remaining_blocks()
+        completed_futures = as_completed(futures)
+        for future in completed_futures:
+            iii = future_indices[future.key]
+            written[iii] = True
+            running[iii] = False
+            locked = _get_locks(running, all_blocks_coords, zarr_blocks)
+            new_futures, new_future_indices = submit_remaining_blocks()
+            completed_futures.update(new_futures)
+            future_indices = {**future_indices, **new_future_indices}
+    else:
+        align_blocks_args = [_create_single_block_align_args_from_index(
+                block_info,
+                partition_dims,
+                overlaps,
+                fix_zarr, mov_zarr,
+                fix_spacing, mov_spacing,
+                fix_mask_zarr, mov_mask_zarr,
+                steps,
+                static_transform_list,
+                output_transform,
+            ) for block_info in indices]
+        futures = cluster.client.map(
+            _align_single_block,
+            align_blocks_args
+        )
+        future_keys = [f.key for f in futures]
+        for batch in as_completed(futures, with_results=True).batches():
+            for future, result in batch:
+                iii = future_keys.index(future.key)
+                block_index = indices[iii][0]
+                block_coords = indices[iii][1]
+                print('Completed block: ', block_index,
+                      '\nSlices: ', block_coords)
 
     return output_transform

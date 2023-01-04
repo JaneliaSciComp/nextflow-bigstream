@@ -22,8 +22,6 @@ def registration_input_params(Map ps) {
         fixed_highres_subpath: 'highres',
         moving_highres_path: '',
         moving_highres_subpath: 'highres',
-        output_path: '',
-        output_subpath: 'deform',
     ] +
     ps
 }

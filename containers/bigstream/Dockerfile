@@ -8,8 +8,7 @@ RUN dnf install -y \
 WORKDIR /app/clusterlib
 
 # install cluster decorator
-RUN git clone https://github.com/GFleishman/ClusterWrap.git . && \
-    pip install .
+RUN git clone https://github.com/GFleishman/ClusterWrap.git .
 
 WORKDIR /app/bigstream
 
@@ -20,4 +19,7 @@ COPY bigstream bigstream
 
 # Use the base environment from the baseImage
 RUN mamba env update -n base -f env.yaml \
+ && cd /app/clusterlib \
+ && pip install . \
+ && cd /app/bigstream \
  && pip install .
