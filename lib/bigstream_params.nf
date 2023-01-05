@@ -2,9 +2,14 @@ def bigstream_params() {
     [
         bigstream_container: 'bigstream:1.0',
         // global alignment (low res) parameters
+        fixed_lowres_path: '',
+        fixed_lowres_subpath: 'lowres',
+        moving_lowres_path: '',
+        moving_lowres_subpath: 'lowres',
+        global_output_path: '',
         global_transform_name: 'affine.mat',
         global_aligned_name: '',
-        global_use_existing_transform: false, // if global transform already exists use it
+        use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to run global alignment
         global_ransac_blob_sizes: '6,20',
         global_shrink_factors: '2',
@@ -13,10 +18,16 @@ def bigstream_params() {
         global_min_step: 0,
         global_iterations: 400,
         // local alignment (high res) parameters
-        partition_blocksize: 128,
+        fixed_highres_path: '',
+        fixed_highres_subpath: 'highres',
+        moving_highres_path: '',
+        moving_highres_subpath: 'highres',
+        local_output_path: '',
         local_transform_name: '',
         local_aligned_name: '',
         local_steps: '', // use ransac,deform to run local alignment
+        partition_blocksize: 128, // processing blocksize for parallelization
+        output_blocksize: 128,  // output block (chunk) size
         local_ransac_blob_sizes: '6,20',
         local_control_point_spacing: 50,
         control_point_levels: '1',

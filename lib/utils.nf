@@ -4,16 +4,32 @@ def get_runtime_opts(paths) {
 }
 
 def get_mounted_vols_opts(paths) {
-    def unique_paths = paths.unique(false)
+    def unique_paths = paths.findAll { it ? true : false }.unique(false)
     switch (workflow.containerEngine) {
         case 'docker': 
-            return unique_paths.collect { "-v $it:$it" }
-                               .join(' ')
+            return unique_paths
+                .collect {
+                    def f = file(it)
+                    "-v $f:$f" 
+                }
+                .join(' ')
         case 'singularity':
-            return unique_paths.collect { "-B $it" }
-                               .join(' ')
+            return unique_paths
+                .collect {
+                    def f = file(it)
+                    "-B $f" 
+                }
+                .join(' ')
         default:
             log.error "Unsupported container engine: ${workflow.containerEngine}"
             ''
+    }
+}
+
+def parentfile(f) {
+    if (f) {
+        file(f).parent
+    } else {
+        null
     }
 }

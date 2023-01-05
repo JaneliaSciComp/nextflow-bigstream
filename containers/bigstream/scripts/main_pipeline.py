@@ -268,6 +268,37 @@ def _run_lowres_alignment(args, steps, lowres_output_dir):
             exists(lowres_transform_file)):
         print('Read global transform from', lowres_transform_file, flush=True)
         lowres_transform = np.loadtxt(lowres_transform_file)
+
+        fix_lowres_ldata, fix_lowres_attrs = n5_utils.open(
+            args.fixed_lowres, args.fixed_lowres_subpath)
+        mov_lowres_ldata, mov_lowres_attrs = n5_utils.open(
+            args.moving_lowres, args.moving_lowres_subpath)
+        fix_lowres_voxel_spacing = n5_utils.get_voxel_spacing(fix_lowres_attrs)
+        mov_lowres_voxel_spacing = n5_utils.get_voxel_spacing(mov_lowres_attrs)
+
+        lowres_alignment = apply_transform(fix_lowres_ldata[...],
+                                           mov_lowres_ldata[...],
+                                           fix_lowres_voxel_spacing,
+                                           mov_lowres_voxel_spacing,
+                                           transform_list=[lowres_transform,])
+
+        if lowres_output_dir and args.global_aligned_name:
+            lowres_aligned_file = (lowres_output_dir + '/' + 
+                                   args.global_aligned_name)
+            
+            # for now save it as an N5 dataset
+            n5_utils.create_dataset(
+                lowres_aligned_file,
+                args.moving_lowres_subpath, # same dataset as the moving image
+                lowres_alignment.shape,
+                (args.output_chunk_size,)*lowres_alignment.ndim,
+                lowres_alignment.dtype,
+                data=lowres_alignment
+            )
+            nrrd.write(lowres_aligned_file + '.nrrd',
+                       lowres_alignment.transpose(2, 1, 0),
+                       compression_level=2)            
+
     elif steps:
         print('Run global registration with:', args, steps, flush=True)
         # Read the the lowres inputs
@@ -299,15 +330,17 @@ def _run_lowres_alignment(args, steps, lowres_output_dir):
                                    args.global_aligned_name)
             
             # for now save it as an N5 dataset
-            lowres_alignment_data = lowres_alignment.transpose(2, 1, 0)
             n5_utils.create_dataset(
                 lowres_aligned_file,
                 args.moving_lowres_subpath, # same dataset as the moving image
-                lowres_alignment_data.shape,
-                (args.output_chunk_size,)*lowres_alignment_data.ndim,
-                lowres_alignment_data.dtype,
-                data=lowres_alignment_data
+                lowres_alignment.shape,
+                (args.output_chunk_size,)*lowres_alignment.ndim,
+                lowres_alignment.dtype,
+                data=lowres_alignment
             )
+            nrrd.write(lowres_aligned_file + '.nrrd',
+                       lowres_alignment.transpose(2, 1, 0),
+                       compression_level=2)            
     else:
         print('Skip global alignment because no global steps were specified.')
         lowres_transform = None
