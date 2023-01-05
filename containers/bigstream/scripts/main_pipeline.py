@@ -85,9 +85,17 @@ def _define_args(global_descriptor, local_descriptor):
                              action='store_true',
                              help='If set use an existing global transform')
 
-    args_parser.add_argument('--output-dir',
-                             dest='output_dir',
-                             required=True,
+    args_parser.add_argument('--output-chunk-size', 
+                             dest='output_chunk_size',
+                             default=128,
+                             type=int,
+                             help='Output chunk size')
+
+    args_parser.add_argument(global_descriptor._argflag('output-dir'),
+                             dest=global_descriptor._argdest('output_dir'),
+                             help='Output directory')
+    args_parser.add_argument(local_descriptor._argflag('output-dir'),
+                             dest=local_descriptor._argdest('output_dir'),
                              help='Output directory')
     args_parser.add_argument('--global-registration-steps',
                              dest='global_registration_steps',
@@ -244,9 +252,13 @@ def _extract_deform_args(args, argdescriptor):
     return deform_args
 
 
-def _run_global_registration(args, steps):
-    if args.global_transform_name:
-        lowres_transform_file = (args.output_dir + '/' + 
+def _extract_output_dir(args, argdescriptor):
+    return getattr(args, argdescriptor._argdest('output_dir'))
+
+
+def _run_lowres_alignment(args, steps, lowres_output_dir):
+    if lowres_output_dir and args.global_transform_name:
+        lowres_transform_file = (lowres_output_dir + '/' + 
                                  args.global_transform_name)
     else:
         lowres_transform_file = None
@@ -271,7 +283,7 @@ def _run_global_registration(args, steps):
         print('Moving lowres volume attributes:',
               mov_lowres_ldata.shape, mov_lowres_voxel_spacing, flush=True)
 
-        lowres_transform, lowres_alignment = _run_lowres_alignment(
+        lowres_transform, lowres_alignment = _align_lowres_data(
             fix_lowres_ldata[...],  # read image in memory
             mov_lowres_ldata[...],
             fix_lowres_voxel_spacing,
@@ -282,13 +294,20 @@ def _run_global_registration(args, steps):
             # save the lowres transformation
             np.savetxt(lowres_transform_file, lowres_transform)
 
-        if args.global_aligned_name:
-            lowres_aligned_file = (args.output_dir + '/' + 
+        if lowres_output_dir and args.global_aligned_name:
+            lowres_aligned_file = (lowres_output_dir + '/' + 
                                    args.global_aligned_name)
-            # for now save it as nrrd
-            nrrd.write(lowres_aligned_file,
-                       lowres_alignment.transpose(2, 1, 0),
-                       compression_level=2)
+            
+            # for now save it as an N5 dataset
+            lowres_alignment_data = lowres_alignment.transpose(2, 1, 0)
+            n5_utils.create_dataset(
+                lowres_aligned_file,
+                args.moving_lowres_subpath, # same dataset as the moving image
+                lowres_alignment_data.shape,
+                (args.output_chunk_size,)*lowres_alignment_data.ndim,
+                lowres_alignment_data.dtype,
+                data=lowres_alignment_data
+            )
     else:
         print('Skip global alignment because no global steps were specified.')
         lowres_transform = None
@@ -296,11 +315,11 @@ def _run_global_registration(args, steps):
     return lowres_transform
 
 
-def _run_lowres_alignment(fix_data,
-                          mov_data,
-                          fix_spacing,
-                          mov_spacing,
-                          steps):
+def _align_lowres_data(fix_data,
+                       mov_data,
+                       fix_spacing,
+                       mov_spacing,
+                       steps):
     print('Run low res alignment:', steps, flush=True)
     affine = alignment_pipeline(fix_data,
                                 mov_data,
@@ -318,7 +337,7 @@ def _run_lowres_alignment(fix_data,
     return affine, aligned
 
 
-def _run_local_registration(args, steps, global_transform):
+def _run_highres_alignment(args, steps, global_transform, output_dir):
     if steps:
         print('Run local registration with:', steps, flush=True)
 
@@ -345,7 +364,7 @@ def _run_local_registration(args, steps, global_transform):
         else:
             cluster = local_cluster()
 
-        _run_highres_alignment(
+        _align_highres_data(
             fix_highres_ldata,
             mov_highres_ldata,
             fix_highres_voxel_spacing,
@@ -353,26 +372,28 @@ def _run_local_registration(args, steps, global_transform):
             steps,
             args.partition_blocksize,
             [global_transform] if global_transform is not None else [],
-            args.output_dir,
+            output_dir,
             args.local_transform_name,
             args.local_aligned_name,
+            args.output_chunk_size,
             cluster
         )
     else:
         print('Skip local alignment because no local steps were specified.')
 
 
-def _run_highres_alignment(fix_data,
-                           mov_data,
-                           fix_spacing,
-                           mov_spacing,
-                           steps,
-                           partitionsize,
-                           transforms_list,
-                           output_dir,
-                           highres_transform_name,
-                           highres_aligned_name,
-                           cluster):
+def _align_highres_data(fix_data,
+                        mov_data,
+                        fix_spacing,
+                        mov_spacing,
+                        steps,
+                        partitionsize,
+                        transforms_list,
+                        output_dir,
+                        highres_transform_name,
+                        highres_aligned_name,
+                        output_chunk_size,
+                        cluster):
     print('Run high res alignment:', steps, partitionsize, flush=True)
     if highres_transform_name:
         deform_transform_output = output_dir + '/' + highres_transform_name
@@ -385,6 +406,7 @@ def _run_highres_alignment(fix_data,
         partitionsize,
         static_transform_list=transforms_list,
         write_path=deform_transform_output,
+        output_chunk_size=output_chunk_size,
         cluster=cluster,
     )
 
@@ -417,7 +439,11 @@ if __name__ == '__main__':
     else:
         global_steps = []
 
-    global_transform = _run_global_registration(args, global_steps)
+    global_transform = _run_lowres_alignment(
+        args,
+        global_steps,
+        _extract_output_dir(args, global_descriptor)
+    )
 
     if args.local_registration_steps:
         args_for_local_steps = {
@@ -429,4 +455,9 @@ if __name__ == '__main__':
     else:
         local_steps = []
 
-    _run_local_registration(args, local_steps, global_transform)
+    _run_highres_alignment(
+        args,
+        local_steps,
+        global_transform,
+        _extract_output_dir(args, local_descriptor)
+    )
