@@ -8,8 +8,8 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None):
                         n5_subpath,
                         shape=shape,
                         chunks=chunks,
-                        dtype=dtype)
-    n5_dataset[:] = data
+                        dtype=dtype,
+                        data=data)
     return n5_dataset
 
 
