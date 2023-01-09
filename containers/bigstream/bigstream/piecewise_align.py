@@ -354,6 +354,8 @@ def distributed_piecewise_alignment_pipeline(
             for future, result in batch:
                 iii = future_keys.index(future.key)
                 transform[indices[iii][1]] += result
+                print('Completed block: ', indices[iii][0],
+                      '\nBlock coords: ', indices[iii][1])
         return transform
 
     # for large alignments
@@ -376,6 +378,8 @@ def distributed_piecewise_alignment_pipeline(
             future_indices = {}
             for iii, index in enumerate(indices):
                 if not written[iii] and not running[iii] and not locked[iii]:
+                    print('Submit block: ', index[0],
+                          '\nBlock coords: ', index[1])
                     f = cluster.client.submit(
                         align_single_block, index,
                         static_transform_list=static_transform_list,

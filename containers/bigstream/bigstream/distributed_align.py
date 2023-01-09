@@ -144,7 +144,7 @@ def _align_single_block(block_index,
 
         print('Completed alignment for block', block_index)
     except Exception as e:
-        print('Alignment pipline failed for block', block_index, e)
+        print('Alignment pipeline failed for block', block_index, e)
         traceback.print_exc(e)
         return
 
