@@ -421,6 +421,7 @@ def distributed_alignment_pipeline(
         prefix='.',
         dir=temporary_directory or os.getcwd(),
     )
+    print('Run distributed alignment using working dir:', temporary_directory)
     fix_zarr_path = temporary_directory.name + '/fix.zarr'
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
@@ -505,6 +506,8 @@ def distributed_alignment_pipeline(
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
     if write_path:
+        print('Submit alignment for ', len(indices),
+              'blocks to write to', write_path)
         # large alignments that spills over to disk
         written = [False,] * len(indices)
         running = [False,] * len(indices)
@@ -535,6 +538,7 @@ def distributed_alignment_pipeline(
             completed_futures.update(new_futures)
             future_indices = {**future_indices, **new_future_indices}
     else:
+        print('Submit alignment for', len(indices), 'bocks')
         align_blocks_args = [_create_single_block_align_args_from_index(
                 block_info,
                 partition_dims,
