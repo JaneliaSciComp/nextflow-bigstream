@@ -26,6 +26,14 @@ def get_mounted_vols_opts(paths) {
     }
 }
 
+def normalized_file_name(f) {
+    if (f) {
+        "${file(f)}"
+    } else {
+        ''
+    }
+}
+
 def parentfile(f) {
     if (f) {
         file(f).parent

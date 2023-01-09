@@ -76,13 +76,13 @@ process BIGSTREAM {
         ? "--moving-highres ${highres_moving_path} --moving-highres-subpath ${highres_moving_subpath}"
         : ''
     def highres_output_arg = highres_output_path
-        ? "--global-output-dir ${lowres_output_path}"
+        ? "--local-output-dir ${lowres_output_path}"
         : ''
     def mk_highres_output = highres_output_path
         ? "mkdir -p ${highres_output_path}"
         : ''
-    def highres_transform_name = params.global_transform_name
-        ? "--local-transform-name ${params.global_transform_name}"
+    def highres_transform_name = params.local_transform_name
+        ? "--local-transform-name ${params.local_transform_name}"
         : ''
     def highres_aligned_name = params.local_aligned_name
         ? "--local-aligned-name ${params.local_aligned_name}"

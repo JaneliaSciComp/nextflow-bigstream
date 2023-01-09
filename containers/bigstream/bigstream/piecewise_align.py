@@ -28,6 +28,7 @@ def distributed_piecewise_alignment_pipeline(
     cluster_kwargs={},
     temporary_directory=None,
     write_path=None,
+    output_chunk_size=128,
     **kwargs,
 ):
     """
@@ -137,7 +138,7 @@ def distributed_piecewise_alignment_pipeline(
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
     mov_mask_zarr_path = temporary_directory.name + '/mov_mask.zarr'
-    zarr_blocks = (128,)*fix.ndim
+    zarr_blocks = (output_chunk_size,)*fix.ndim
     fix_zarr = ut.numpy_to_zarr(fix, zarr_blocks, fix_zarr_path)
     mov_zarr = ut.numpy_to_zarr(mov, zarr_blocks, mov_zarr_path)
     if fix_mask is not None: fix_mask_zarr = ut.numpy_to_zarr(fix_mask, zarr_blocks, fix_mask_zarr_path)
@@ -316,10 +317,10 @@ def distributed_piecewise_alignment_pipeline(
             region = [slice(None),]*3
             if block_index[i] == 0:
                 region[i] = slice(overlaps[i], None)
-                weights = weights[region]
+                weights = weights[tuple(region)]
             if block_index[i] == nblocks[i] - 1:
                 region[i] = slice(None, -overlaps[i])
-                weights = weights[region]
+                weights = weights[tuple(region)]
 
         # crop any incomplete blocks (on the ends)
         if np.any( weights.shape != transform.shape[:-1] ):

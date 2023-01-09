@@ -10,6 +10,10 @@ include {
     BIGSTREAM;
 } from '../modules/bigstream/main'
 
+include {
+    normalized_file_name;
+} from '../lib/utils'
+
 workflow GLOBAL_BIGSTREAM_ALIGN {
     take:
     align_input // [lowres_fixed, lowres_fixed_dataset,
@@ -31,10 +35,10 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
              lowres_transform_name,
              lowres_aligned_name) = it
         [
-            file(lowres_fixed), lowres_fixed_dataset,
-            file(lowres_moving), lowres_moving_dataset,
+            normalized_file_name(lowres_fixed), lowres_fixed_dataset,
+            normalized_file_name(lowres_moving), lowres_moving_dataset,
             lowres_steps,
-            file(lowres_output),
+            normalized_file_name(lowres_output),
             lowres_transform_name,
             lowres_aligned_name,
             params.use_existing_global_transform,

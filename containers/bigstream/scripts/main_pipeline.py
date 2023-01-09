@@ -7,7 +7,6 @@ from os.path import exists
 from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
-from bigstream.distributed_align import distributed_alignment_pipeline
 from bigstream.piecewise_align import distributed_piecewise_alignment_pipeline
 from bigstream.piecewise_transform import distributed_apply_transform
 
@@ -55,14 +54,12 @@ class _ArgsHelper:
 def _define_args(global_descriptor, local_descriptor):
     args_parser = argparse.ArgumentParser(description='Registration pipeline')
     args_parser.add_argument('--fixed-lowres', dest='fixed_lowres',
-                             required=True,
                              help='Path to the fixed low resolution volume')
     args_parser.add_argument('--fixed-lowres-subpath',
                              dest='fixed_lowres_subpath',
                              help='Fixed low resolution subpath')
 
     args_parser.add_argument('--moving-lowres', dest='moving_lowres',
-                             required=True,
                              help='Path to the moving low resolution volume')
     args_parser.add_argument('--moving-lowres-subpath',
                              dest='moving_lowres_subpath',
@@ -397,11 +394,11 @@ def _align_highres_data(fix_data,
                         output_chunk_size,
                         cluster):
     print('Run high res alignment:', steps, partitionsize, flush=True)
-    if highres_transform_name:
+    if output_dir and highres_transform_name:
         deform_transform_output = output_dir + '/' + highres_transform_name
     else:
         deform_transform_output = None
-    deform = distributed_alignment_pipeline(
+    deform = distributed_piecewise_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         steps,

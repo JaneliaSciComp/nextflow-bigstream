@@ -9,20 +9,22 @@ include {
 final_params = default_params(params)
 
 include {
-    GLOBAL_BIGSTREAM_ALIGN;
-} from './workflows/global-bigstream-align' addParams(final_params)
+    LOCAL_BIGSTREAM_ALIGN;
+} from './workflows/local-bigstream-align' addParams(final_params)
 
 workflow {
-    GLOBAL_BIGSTREAM_ALIGN(Channel.of(
+    LOCAL_BIGSTREAM_ALIGN(Channel.of(
         [
-        final_params.fixed_lowres_path,
-        final_params.fixed_lowres_subpath,
-        final_params.moving_lowres_path,
-        final_params.moving_lowres_subpath,
-        final_params.global_steps,
+        final_params.fixed_highres_path,
+        final_params.fixed_highres_subpath,
+        final_params.moving_highres_path,
+        final_params.moving_highres_subpath,
+        final_params.local_steps,
+        final_params.local_output_path,
+        final_params.local_transform_name,
+        final_params.local_aligned_name,
         final_params.global_output_path,
         final_params.global_transform_name,
-        final_params.global_aligned_name,
         ]
     ))
 }
