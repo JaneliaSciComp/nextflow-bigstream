@@ -1,2 +1,3 @@
 bigstream.egg-info
 build
+dask-cluster-wrapper

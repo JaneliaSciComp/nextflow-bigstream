@@ -27,7 +27,13 @@ workflow LOCAL_BIGSTREAM_ALIGN {
 
     main:
 
-    def align_results = start_cluster()
+    def align_results = start_cluster([
+        normalized_file_name(params.fixed_highres_path),
+        normalized_file_name(params.moving_highres_path),
+        normalized_file_name(params.global_output_path),
+        normalized_file_name(params.local_output_path),
+        normalized_file_name(params.local_working_path),
+    ])
     | combine(align_input)
     | map {
         def (cluster_id, scheduler_ip, cluster_work_dir, connected_workers,

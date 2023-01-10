@@ -1,6 +1,6 @@
 def bigstream_params() {
     [
-        bigstream_container: 'bigstream:1.0',
+        bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.0',
         // global alignment (low res) parameters
         fixed_lowres_path: '',
         fixed_lowres_subpath: 'lowres',
@@ -23,6 +23,7 @@ def bigstream_params() {
         moving_highres_path: '',
         moving_highres_subpath: 'highres',
         local_output_path: '',
+        local_working_path: '',
         local_transform_name: '',
         local_aligned_name: '',
         local_steps: '', // use ransac,deform to run local alignment

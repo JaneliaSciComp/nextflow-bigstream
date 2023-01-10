@@ -90,10 +90,13 @@ def _define_args(global_descriptor, local_descriptor):
 
     args_parser.add_argument(global_descriptor._argflag('output-dir'),
                              dest=global_descriptor._argdest('output_dir'),
-                             help='Output directory')
+                             help='Global alignment output directory')
     args_parser.add_argument(local_descriptor._argflag('output-dir'),
                              dest=local_descriptor._argdest('output_dir'),
-                             help='Output directory')
+                             help='Local alignment output directory')
+    args_parser.add_argument(local_descriptor._argflag('working-dir'),
+                             dest=local_descriptor._argdest('working_dir'),
+                             help='Local alignment working directory')
     args_parser.add_argument('--global-registration-steps',
                              dest='global_registration_steps',
                              type=_stringlist,
@@ -253,6 +256,10 @@ def _extract_output_dir(args, argdescriptor):
     return getattr(args, argdescriptor._argdest('output_dir'))
 
 
+def _extract_working_dir(args, argdescriptor):
+    return getattr(args, argdescriptor._argdest('working_dir'))
+
+
 def _run_lowres_alignment(args, steps, lowres_output_dir):
     if lowres_output_dir and args.global_transform_name:
         lowres_transform_file = (lowres_output_dir + '/' + 
@@ -336,7 +343,7 @@ def _align_lowres_data(fix_data,
     return affine, aligned
 
 
-def _run_highres_alignment(args, steps, global_transform, output_dir):
+def _run_highres_alignment(args, steps, global_transform, output_dir, working_dir):
     if steps:
         print('Run local registration with:', steps, flush=True)
 
@@ -375,7 +382,8 @@ def _run_highres_alignment(args, steps, global_transform, output_dir):
             args.local_transform_name,
             args.local_aligned_name,
             args.output_chunk_size,
-            cluster
+            cluster,
+            working_dir,
         )
     else:
         print('Skip local alignment because no local steps were specified.')
@@ -392,7 +400,8 @@ def _align_highres_data(fix_data,
                         highres_transform_name,
                         highres_aligned_name,
                         output_chunk_size,
-                        cluster):
+                        cluster,
+                        working_dir):
     print('Run high res alignment:', steps, partitionsize, flush=True)
     if output_dir and highres_transform_name:
         deform_transform_output = output_dir + '/' + highres_transform_name
@@ -407,6 +416,7 @@ def _align_highres_data(fix_data,
         write_path=deform_transform_output,
         output_chunk_size=output_chunk_size,
         cluster=cluster,
+        temporary_directory=working_dir,
     )
 
     aligned = distributed_apply_transform(
@@ -458,5 +468,6 @@ if __name__ == '__main__':
         args,
         local_steps,
         global_transform,
-        _extract_output_dir(args, local_descriptor)
+        _extract_output_dir(args, local_descriptor),
+        _extract_working_dir(args, local_descriptor),
     )

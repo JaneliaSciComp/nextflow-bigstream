@@ -1,6 +1,7 @@
 include {
     get_runtime_opts;
     parentfile;
+    normalized_file_name;
 } from '../../lib/utils'
 
 process BIGSTREAM {
@@ -12,6 +13,7 @@ process BIGSTREAM {
         highres_moving_path,
         parentfile(lowres_output_path),
         parentfile(highres_output_path),
+        normalized_file_name(params.local_working_path),
     ]) }
 
     memory { "${params.bigstream_mem_gb} GB" }
@@ -93,10 +95,17 @@ process BIGSTREAM {
     def use_existing_lowres_transform = lowres_use_existing_transform
         ? '--use-existing-global-transform'
         : ''
+    def mk_highres_working_dir = params.local_working_path
+        ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
+        : ''
+    def highres_working_dir = params.local_working_path
+        ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
+        : ''
     """
     umask 0002
     ${mk_lowres_output}
     ${mk_highres_output}
+    ${mk_highres_working_dir}
     python /app/bigstream/scripts/main_pipeline.py \
         ${lowres_steps_arg} \
         ${lowres_fixed_args} \
@@ -111,6 +120,7 @@ process BIGSTREAM {
         ${highres_output_arg} \
         ${highres_transform_name} \
         ${highres_aligned_name} \
+        ${highres_working_dir} \
         --partition-blocksize ${params.partition_blocksize} \
         --output-chunk-size ${params.output_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
