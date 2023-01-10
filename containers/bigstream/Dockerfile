@@ -1,5 +1,5 @@
 # Create final image
-FROM janeliascicomp/dask:2022.11.1
+FROM janeliascicomp/dask:2022.12.1
 
 RUN dnf install -y \
         git \

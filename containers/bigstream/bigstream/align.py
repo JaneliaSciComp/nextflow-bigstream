@@ -1,13 +1,12 @@
-import cv2
 import sys
 import numpy as np
 import SimpleITK as sitk
-import bigstream.features as features
 import bigstream.utility as ut
-
 from bigstream.configure_irm import configure_irm
 from bigstream.transform import apply_transform, compose_transform_list
 from bigstream.metrics import patch_mutual_information
+from bigstream import features
+import cv2
 
 # TODO: bug! fix_spacing is overwritten after resolve_sampling is called
 #       but downstream functions rely on it having the original value
@@ -147,10 +146,12 @@ def feature_point_ransac_affine_align(
 
     # check spot counts
     if fix_spots.shape[0] < 50:
-        print('Fewer than 50 spots found in fixed image, returning default')
+        print('Fewer than 50 spots found in fixed image, returning default',
+              flush=True)
         return default
     if mov_spots.shape[0] < 50:
-        print('Fewer than 50 spots found in moving image, returning default')
+        print('Fewer than 50 spots found in moving image, returning default',
+              flush=True)
         return default
 
     # align
@@ -163,7 +164,7 @@ def feature_point_ransac_affine_align(
 
     # ensure affine is sensible
     if np.any( np.diag(Aff) < diagonal_constraint ):
-        print("Degenerate affine produced, returning default")
+        print("Degenerate affine produced, returning default", flush=True)
         return default
 
     # augment to 4x4 matrix and return
@@ -428,7 +429,7 @@ def random_affine_search(
         scores[iii] = score_affine(ut.physical_parameters_to_affine_matrix(ppp, center))
         if print_running_improvements and scores[iii] < current_best_score:
                 current_best_score = scores[iii]
-                print(iii, ': ', current_best_score, '\n', ppp)
+                print(iii, ': ', current_best_score, '\n', ppp, flush=True)
     sys.stdout.flush()
 
     # return top results
@@ -574,7 +575,10 @@ def affine_align(
         irm.SetMovingInitialTransform(T)
     # set transform to optimize
     if isinstance(initial_condition, str) and initial_condition == "CENTER":
-        x = sitk.CenteredTransformInitializer(fix, mov, sitk.Euler3DTransform())
+        a, b = fix, mov
+        if fix_mask is not None and mov_mask is not None:
+            a, b = fix_mask, mov_mask
+        x = sitk.CenteredTransformInitializer(a, b, sitk.Euler3DTransform())
         x = sitk.Euler3DTransform(x).GetTranslation()[::-1]
         initial_condition = np.eye(4)
         initial_condition[:3, -1] = x
@@ -911,11 +915,11 @@ def alignment_pipeline(
     a = (fix, mov, fix_spacing, mov_spacing)
     b = {'fix_mask':fix_mask, 'mov_mask':mov_mask,
          'fix_origin':fix_origin, 'mov_origin':mov_origin,}
-    align = {'ransac':lambda **c: feature_point_ransac_affine_align(*a, **b, **c),
-             'random':lambda **c: random_affine_search(*a, **b, **c)[0],
-             'rigid': lambda **c: affine_align(*a, **b, **c, rigid=True),
-             'affine':lambda **c: affine_align(*a, **b, **c),
-             'deform':lambda **c: deformable_align(*a, **b, **c)[1],}
+    align = {'ransac':lambda **c: feature_point_ransac_affine_align(*a, **{**b, **c}),
+             'random':lambda **c: random_affine_search(*a, **{**b, **c})[0],
+             'rigid': lambda **c: affine_align(*a, **{**b, **c}, rigid=True),
+             'affine':lambda **c: affine_align(*a, **{**b, **c}),
+             'deform':lambda **c: deformable_align(*a, **{**b, **c})[1],}
 
     # loop over steps
     initial_transform_count = len(static_transform_list)
