@@ -24,6 +24,12 @@ workflow start_cluster {
         )
     } else {
         cluster = Channel.of(['', '', params.work_dir, -1]).combine(accessible_paths)
+        | map {
+            def (cluster_id, cluster_scheduler_ip, cluster_work_dir, cluster_workers) = it
+            [
+                cluster_id, cluster_scheduler_ip, cluster_work_dir, cluster_workers
+            ]
+        }
     }
 
     emit:
