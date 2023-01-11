@@ -1,8 +1,12 @@
 include {
+    get_runtime_opts;
+    normalized_file_name;
     parentfile;
 } from '../../lib/utils'
 
 process PREPARE_DIRS {
+    label 'process_low'
+
     container { params.bigstream_container }
     containerOptions { get_runtime_opts(ds.collect { parentfile(it) }) }
 

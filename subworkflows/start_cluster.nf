@@ -6,6 +6,10 @@ include {
     normalized_file_name;
 } from '../lib/utils'
 
+include {
+    PREPARE_DIRS;
+} from '../modules/local/prepare_dirs'
+
 workflow start_cluster {
     take:
     cluster_accessible_paths
