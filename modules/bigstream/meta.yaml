@@ -1,0 +1,51 @@
+name: bigstream
+description: run bigstream registration
+keywords:
+  - registration
+input:
+    - lowres_fixed_path
+      type: string
+      description: Path to the low resolution fixed image file or data container
+    - lowres_fixed_subpath
+      type: string
+      description: |
+        If the fixed image is a data container this can be the 
+        path to the low resolution component
+    - lowres_moving_path
+      type: string
+    - lowres_moving_subpath
+      type: string
+    - lowres_steps
+      type: string
+      description: |
+        Comma separated list of steps to be run for the lowres image
+    - lowres_output_path
+      type: string
+    - lowres_transform_name
+      type: string
+    - lowres_aligned_name
+      type: string
+    - lowres_use_existing_transform
+      type: string
+    - highres_fixed_path
+      type: string
+    - highres_fixed_subpath
+      type: string
+    - highres_moving_path
+      type: string
+    - highres_moving_subpath
+      type: string
+    - highres_steps
+      type: string
+    - highres_output_path
+      type: string
+    - highres_transform_name
+      type: string
+    - highres_aligned_name
+      type: string
+    - scheduler
+      type: string
+    - scheduler_workdir
+      type: string
+
+output:

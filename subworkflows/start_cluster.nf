@@ -11,13 +11,15 @@ workflow start_cluster {
     cluster_accessible_paths
 
     main:
+    def accessible_paths = PREPARE_DIRS(cluster_accessible_paths)
+
     if (params.with_dask_cluster && params.local_steps) {
         cluster = CREATE_DASK_CLUSTER(
             file(params.work_dir),
-            cluster_accessible_paths
+            accessible_paths
         )
     } else {
-        cluster = Channel.of(['', '', params.work_dir, -1])
+        cluster = Channel.of(['', '', params.work_dir, -1]).combine(accessible_paths)
     }
 
     emit:
