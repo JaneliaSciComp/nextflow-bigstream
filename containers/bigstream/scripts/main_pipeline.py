@@ -7,7 +7,7 @@ from os.path import exists
 from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
-from bigstream.piecewise_align import distributed_piecewise_alignment_pipeline
+from bigstream.distributed_align import distributed_alignment_pipeline
 from bigstream.piecewise_transform import distributed_apply_transform
 
 
@@ -407,7 +407,7 @@ def _align_highres_data(fix_data,
         deform_transform_output = output_dir + '/' + highres_transform_name
     else:
         deform_transform_output = None
-    deform = distributed_piecewise_alignment_pipeline(
+    deform = distributed_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         steps,

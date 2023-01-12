@@ -14,11 +14,12 @@ WORKDIR /app/bigstream
 
 COPY env.yaml .
 COPY setup.py .
-COPY scripts scripts
-COPY bigstream bigstream
 
 # Use the base environment from the baseImage
 RUN mamba env update -n base -f env.yaml
+
+COPY scripts scripts
+COPY bigstream bigstream
 
 RUN cd /app/clusterlib \
  && pip install . \

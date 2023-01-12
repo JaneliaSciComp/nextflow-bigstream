@@ -118,6 +118,9 @@ def distributed_piecewise_alignment_pipeline(
         process memory, set this parameter to a location where the transform
         can be written to disk as a zarr file.
 
+    output_chunk_size: integer (default: 128)
+        Chunk size for the output container
+
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
         arguments for specific steps e.g. `random_kwargs` etc.

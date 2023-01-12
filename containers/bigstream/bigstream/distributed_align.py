@@ -60,9 +60,9 @@ def _align_single_block(block_index,
                         result_transform):
 
     # print some feedback
-    print('Block index: ', block_index,
-          '\nSlices: ',block_coords,
-          '\nNeighbors: ',block_neighbors,
+    print('Align block: ', block_index,
+          '\nBlock coords: ',block_coords,
+          '\nBlock neighbors: ',block_neighbors,
           flush=True)
 
     # get the coordinates, read fixed data
@@ -282,6 +282,7 @@ def _submit_new_blocks_to_align(all_blocks_info,
                 result_transform,
             )
 
+            print('Submit block: ', submit_args[0], flush=True)
             f = cluster_client.submit(
                 _align_single_block,
                 *submit_args,
@@ -560,7 +561,6 @@ def distributed_alignment_pipeline(
                 iii = future_keys.index(future.key)
                 block_index = indices[iii][0]
                 block_coords = indices[iii][1]
-                print('Completed block: ', block_index,
-                      '\nSlices: ', block_coords)
+                print('Completed block: ', block_index, flush=True)
 
     return output_transform
