@@ -103,7 +103,7 @@ def distributed_apply_transform(
     fix_zarr = ut.numpy_to_zarr(fix, output_chunk_size, fix_zarr_path)
     mov_zarr = ut.numpy_to_zarr(mov, output_chunk_size, mov_zarr_path)
 
-    # ensure all deforms are zarr
+    # ensure all transforms are zarr
     zarr_transform_list = []
     zarr_transform_blocks = output_chunk_size + (fix_zarr.ndim,)
     for iii, transform in enumerate(transform_list):
