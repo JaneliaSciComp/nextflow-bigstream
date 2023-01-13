@@ -429,7 +429,7 @@ def _align_highres_data(fix_data,
     else:
         deform_transform_dataset = None
     print('Calculate transformation for local alignment', flush=True)
-    deform = deform_transform_dataset
+    deform = deform_transform_dataset # !!!!
     # deform = distributed_alignment_pipeline(
     #     fix_data, mov_data,
     #     fix_spacing, mov_spacing,
