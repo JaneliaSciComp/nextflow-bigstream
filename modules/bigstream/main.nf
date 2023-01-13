@@ -110,7 +110,7 @@ process BIGSTREAM {
     ${mk_lowres_output}
     ${mk_highres_output}
     ${mk_highres_working_dir}
-    python /app/bigstream/scripts/main_pipeline.py \
+    python /app/bigstream/scripts/main_align_pipeline.py \
         ${lowres_steps_arg} \
         ${lowres_fixed_args} \
         ${lowres_moving_args} \

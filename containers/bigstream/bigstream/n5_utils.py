@@ -7,8 +7,8 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None):
         n5_store = zarr.N5Store(n5_path)
         if n5_subpath:
             print('Create dataset', n5_path, n5_subpath, flush=True)
-            n5_root = zarr.open(store=n5_store, mode='a')
-            return n5_root.create_dataset(
+            n5_root = zarr.open_group(store=n5_store, mode='a')
+            return n5_root.require_dataset(
                 n5_subpath,
                 shape=shape,
                 chunks=chunks,
