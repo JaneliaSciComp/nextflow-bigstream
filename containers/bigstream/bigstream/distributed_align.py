@@ -303,6 +303,7 @@ def distributed_alignment_pipeline(
     mov_spacing,
     steps,
     partition_size,
+    output_blocks,
     overlap=0.5,
     fix_mask=None,
     mov_mask=None,
@@ -311,8 +312,7 @@ def distributed_alignment_pipeline(
     cluster=None,
     cluster_kwargs={},
     temporary_directory=None,
-    write_path=None,
-    output_chunk_size=128,
+    output_transform=None,
     **kwargs,
 ):
     """
@@ -358,6 +358,9 @@ def distributed_alignment_pipeline(
     partition_size : int
         Partition size for distributing the work
 
+    output_blocks: tuple
+        Output chunk size
+
     overlap : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
 
@@ -397,13 +400,8 @@ def distributed_alignment_pipeline(
         current directory. Temporary files are removed if the function completes
         successfully.
 
-    write_path : string (default: None)
-        If the transform found by this function is too large to fit into main
-        process memory, set this parameter to a location where the transform
-        can be written to disk as a zarr file.
-
-    output_chunk_size: integer (default: 128)
-        Chunk size for the output container
+    output_transform : ndarray (default: None)
+        Output transform
 
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
@@ -427,17 +425,16 @@ def distributed_alignment_pipeline(
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
     mov_mask_zarr_path = temporary_directory.name + '/mov_mask.zarr'
-    zarr_blocks = (output_chunk_size,)*fix.ndim
-    fix_zarr = ut.numpy_to_zarr(fix, zarr_blocks, fix_zarr_path)
-    mov_zarr = ut.numpy_to_zarr(mov, zarr_blocks, mov_zarr_path)
+    fix_zarr = ut.numpy_to_zarr(fix, output_blocks, fix_zarr_path)
+    mov_zarr = ut.numpy_to_zarr(mov, output_blocks, mov_zarr_path)
     if fix_mask is not None:
         fix_mask_zarr = ut.numpy_to_zarr(
-            fix_mask, zarr_blocks, fix_mask_zarr_path)
+            fix_mask, output_blocks, fix_mask_zarr_path)
     else:
         fix_mask_zarr = None
     if mov_mask is not None:
         mov_mask_zarr = ut.numpy_to_zarr(
-            mov_mask, zarr_blocks, mov_mask_zarr_path)
+            mov_mask, output_blocks, mov_mask_zarr_path)
     else:
         mov_mask_zarr = None
 
@@ -447,23 +444,9 @@ def distributed_alignment_pipeline(
         if transform.shape != (4, 4) and len(transform.shape) != 1:
             path = temporary_directory.name + f'/deform{iii}.zarr'
             transform = ut.numpy_to_zarr(
-                transform, zarr_blocks + (transform.shape[-1],), path)
+                transform, output_blocks + (transform.shape[-1],), path)
         new_list.append(transform)
     static_transform_list = new_list
-
-    if write_path:
-        # zarr file for output (if write_path is given)
-        output_transform = ut.create_zarr(
-            write_path,
-            fix.shape + (fix.ndim,),
-            zarr_blocks + (fix.ndim,),
-            np.float32,
-        )
-    else:
-        output_transform = np.zeros(
-            fix.shape + (fix.ndim,),
-            dtype=np.float32,
-        )
 
     # determine fixed image slices for blocking
     partition_dims = np.array((partition_size,)*fix.ndim)
@@ -506,9 +489,8 @@ def distributed_alignment_pipeline(
     # establish all keyword arguments
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
-    if write_path:
-        print('Submit alignment for ', len(indices),
-              'blocks to write to', write_path)
+    if output_transform is not None:
+        print('Submit alignment for ', len(indices), 'blocks')
         # large alignments that spills over to disk
         written = [False,] * len(indices)
         running = [False,] * len(indices)
@@ -524,7 +506,7 @@ def distributed_alignment_pipeline(
             steps,
             static_transform_list,
             output_transform,
-            zarr_blocks,
+            output_blocks,
             written, running, locked,
             cluster.client
         )
@@ -534,10 +516,11 @@ def distributed_alignment_pipeline(
             iii = future_indices[future.key]
             written[iii] = True
             running[iii] = False
-            locked = _get_locks(running, all_blocks_coords, zarr_blocks)
+            locked = _get_locks(running, all_blocks_coords, output_blocks)
             new_futures, new_future_indices = submit_remaining_blocks()
             completed_futures.update(new_futures)
             future_indices = {**future_indices, **new_future_indices}
+        result_transform = output_transform
     else:
         print('Submit alignment for', len(indices), 'bocks')
         align_blocks_args = [_create_single_block_align_args_from_index(
@@ -549,18 +532,19 @@ def distributed_alignment_pipeline(
                 fix_mask_zarr, mov_mask_zarr,
                 steps,
                 static_transform_list,
-                output_transform,
+                None, # output_transform
             ) for block_info in indices]
         futures = cluster.client.map(
             _align_single_block,
             align_blocks_args
         )
         future_keys = [f.key for f in futures]
+        result_transform = np.zeros(fix.shape + (fix.ndim,), dtype=np.float32)
         for batch in as_completed(futures, with_results=True).batches():
             for future, result in batch:
                 iii = future_keys.index(future.key)
-                block_index = indices[iii][0]
-                block_coords = indices[iii][1]
-                print('Completed block: ', block_index, flush=True)
+                result_block_info = indices[iii]
+                result_transform[result_block_info[1]] += result
+                print('Completed block: ', result_block_info[0], flush=True)
 
-    return output_transform
+    return result_transform

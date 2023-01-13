@@ -2,13 +2,15 @@ import argparse
 import numpy as np
 import nrrd
 import bigstream.n5_utils as n5_utils
+import yaml
 
+from flatten_json import flatten
 from os.path import exists
 from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
 from bigstream.distributed_align import distributed_alignment_pipeline
-from bigstream.piecewise_transform import distributed_apply_transform
+from bigstream.distributed_transform import distributed_apply_transform
 
 
 def _inttuple(arg):
@@ -147,6 +149,10 @@ def _define_args(global_descriptor, local_descriptor):
     args_parser.add_argument('--dask-scheduler', dest='dask_scheduler',
                              type=str, default=None,
                              help='Run with distributed scheduler')
+
+    args_parser.add_argument('--dask-config', dest='dask_config',
+                             type=str, default=None,
+                             help='YAML file containing dask configuration')
 
     args_parser.add_argument('--debug', dest='debug',
                              action='store_true',
@@ -365,10 +371,16 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         print('Moving highres volume attributes:',
               mov_highres_ldata.shape, mov_highres_voxel_spacing, flush=True)
 
-        if args.dask_scheduler:
-            cluster = remote_cluster(args.dask_scheduler)
+        if (args.dask_config):
+            with open(args.dask_config) as f:
+                dask_config = flatten(yaml.safe_load(f))
         else:
-            cluster = local_cluster()
+            dask_config = {}
+
+        if args.dask_scheduler:
+            cluster = remote_cluster(args.dask_scheduler, config=dask_config)
+        else:
+            cluster = local_cluster(config=dask_config)
 
         _align_highres_data(
             fix_highres_ldata,
@@ -403,18 +415,25 @@ def _align_highres_data(fix_data,
                         cluster,
                         working_dir):
     print('Run high res alignment:', steps, partitionsize, flush=True)
+    output_blocks = (output_chunk_size,) * fix_data.ndim
     if output_dir and highres_transform_name:
-        deform_transform_output = output_dir + '/' + highres_transform_name
+        deform_transform_dataset = n5_utils.create_dataset(
+            output_dir + '/' + highres_transform_name,
+            None, # no dataset subpath
+            fix_data.shape + (fix_data.ndim,),
+            output_blocks + (fix_data.ndim,),
+            np.float32
+        )
     else:
-        deform_transform_output = None
+        deform_transform_dataset = None
     deform = distributed_alignment_pipeline(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
         steps,
         partitionsize,
+        output_blocks,
         static_transform_list=transforms_list,
-        write_path=deform_transform_output,
-        output_chunk_size=output_chunk_size,
+        output_transform=deform_transform_dataset,
         cluster=cluster,
         temporary_directory=working_dir,
     )
@@ -422,8 +441,9 @@ def _align_highres_data(fix_data,
     aligned = distributed_apply_transform(
         fix_data, mov_data,
         fix_spacing, mov_spacing,
+        partitionsize,
+        output_blocks,
         transform_list=transforms_list + [deform],
-        blocksize=partitionsize,
         write_path=output_dir if highres_aligned_name else None,
         dataset_path=highres_aligned_name,
         cluster=cluster,

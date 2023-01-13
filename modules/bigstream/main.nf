@@ -14,6 +14,7 @@ process BIGSTREAM {
         parentfile(lowres_output_path),
         parentfile(highres_output_path),
         normalized_file_name(params.local_working_path),
+        parentfile(params.dask_config),
     ]) }
 
     memory { "${params.bigstream_mem_gb} GB" }
@@ -101,6 +102,9 @@ process BIGSTREAM {
     def highres_working_dir = params.local_working_path
         ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
         : ''
+    def dask_config_arg = params.dask_config
+        ? "--dask-config ${normalized_file_name(params.dask_config)}"
+        : ''
     """
     umask 0002
     ${mk_lowres_output}
@@ -130,6 +134,7 @@ process BIGSTREAM {
         --local-smooth-sigmas ${params.local_smooth_sigmas} \
         --local-learning-rate ${params.local_learning_rate} \
         --local-iterations ${params.local_iterations} \
-        ${scheduler_arg}
+        ${scheduler_arg} \
+        ${dask_config_arg}
     """
 }

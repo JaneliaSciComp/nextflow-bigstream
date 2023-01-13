@@ -1,6 +1,7 @@
 def bigstream_params() {
     [
         bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.0',
+        dask_config: '',
         // global alignment (low res) parameters
         fixed_lowres_path: '',
         fixed_lowres_subpath: 'lowres',

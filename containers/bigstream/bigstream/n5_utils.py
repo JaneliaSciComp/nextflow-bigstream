@@ -3,14 +3,24 @@ import zarr
 
 
 def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None):
-    n5_container = zarr.open(store=zarr.N5Store(n5_path), mode='a')
-    n5_dataset = n5_container.create_dataset(
-                        n5_subpath,
-                        shape=shape,
-                        chunks=chunks,
-                        dtype=dtype,
-                        data=data)
-    return n5_dataset
+    try:
+        n5_store = zarr.N5Store(n5_path)
+        if n5_subpath:
+            print('Create dataset', n5_path, n5_subpath, flush=True)
+            n5_root = zarr.open(store=n5_store, mode='a')
+            return n5_root.create_dataset(
+                n5_subpath,
+                shape=shape,
+                chunks=chunks,
+                dtype=dtype,
+                data=data)
+        else:
+            print('Create root array', n5_path, flush=True)
+            return zarr.open(store=n5_store, mode='a',
+                             shape=shape, chunks=chunks)
+    except Exception as e:
+        print('Error creating a dataset at', n5_path, n5_subpath, e)
+        raise e
 
 
 def open(n5_path, n5_subpath):
