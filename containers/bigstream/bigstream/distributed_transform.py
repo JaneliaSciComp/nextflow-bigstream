@@ -1,11 +1,14 @@
-import numpy as np
-from itertools import product
-import bigstream.utility as ut
-import os, tempfile
-from ClusterWrap.decorator import cluster
 import dask.array as da
+import numpy as np
+import os, tempfile
 import zarr
+
 import bigstream.transform as cs_transform
+import bigstream.utility as ut
+
+from itertools import product
+from ClusterWrap.decorator import cluster
+from dask.utils import SerializableLock
 
 
 @cluster
@@ -15,10 +18,9 @@ def distributed_apply_transform(
     partition_size,
     output_blocks,
     transform_list,
-    write_path=None,
     overlap_factor=0.5,
     inverse_transforms=False,
-    dataset_path=None,
+    aligned_dataset=None,
     temporary_directory=None,
     cluster=None,
     cluster_kwargs={},
@@ -61,7 +63,7 @@ def distributed_apply_transform(
     inverse_transforms : bool (default: False)
         Set to true if the list of transforms are all inverted
 
-    dataset_path : string (default: None)
+    aligned_dataset : ndarray (default: None)
         A subpath in the zarr array to write the resampled data to
 
     temporary_directory : string (default: None)
@@ -214,9 +216,10 @@ def distributed_apply_transform(
     aligned = aligned[tuple(slice(s) for s in fix_zarr.shape)]
 
     # return
-    if write_path:
-        da.to_zarr(aligned, write_path, component=dataset_path)
-        return zarr.open(write_path, 'r+')
+    if aligned_dataset is not None:
+        lock = SerializableLock()
+        da.store(aligned, aligned_dataset, lock=lock)
+        return aligned_dataset
     else:
         return aligned.compute()
 

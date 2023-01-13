@@ -79,7 +79,7 @@ process BIGSTREAM {
         ? "--moving-highres ${highres_moving_path} --moving-highres-subpath ${highres_moving_subpath}"
         : ''
     def highres_output_arg = highres_output_path
-        ? "--local-output-dir ${lowres_output_path}"
+        ? "--local-output-dir ${highres_output_path}"
         : ''
     def mk_highres_output = highres_output_path
         ? "mkdir -p ${highres_output_path}"

@@ -393,6 +393,7 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
             output_dir,
             args.local_transform_name,
             args.local_aligned_name,
+            args.moving_highres_subpath,
             args.output_chunk_size,
             cluster,
             working_dir,
@@ -411,6 +412,7 @@ def _align_highres_data(fix_data,
                         output_dir,
                         highres_transform_name,
                         highres_aligned_name,
+                        highres_subpath,
                         output_chunk_size,
                         cluster,
                         working_dir):
@@ -426,17 +428,31 @@ def _align_highres_data(fix_data,
         )
     else:
         deform_transform_dataset = None
-    deform = distributed_alignment_pipeline(
-        fix_data, mov_data,
-        fix_spacing, mov_spacing,
-        steps,
-        partitionsize,
-        output_blocks,
-        static_transform_list=transforms_list,
-        output_transform=deform_transform_dataset,
-        cluster=cluster,
-        temporary_directory=working_dir,
-    )
+    print('Calculate transformation for local alignment', flush=True)
+    deform = deform_transform_dataset
+    # deform = distributed_alignment_pipeline(
+    #     fix_data, mov_data,
+    #     fix_spacing, mov_spacing,
+    #     steps,
+    #     partitionsize,
+    #     output_blocks,
+    #     static_transform_list=transforms_list,
+    #     output_transform=deform_transform_dataset,
+    #     cluster=cluster,
+    #     temporary_directory=working_dir,
+    # )
+
+    if output_dir and highres_aligned_name:
+        aligned_dataset = n5_utils.create_dataset(
+            output_dir + '/' + highres_aligned_name,
+            highres_subpath,
+            fix_data.shape,
+            output_blocks,
+            fix_data.dtype,
+        )
+    else:
+        aligned_dataset = None
+    print('Apply local transformation', flush=True)
 
     aligned = distributed_apply_transform(
         fix_data, mov_data,
@@ -444,9 +460,9 @@ def _align_highres_data(fix_data,
         partitionsize,
         output_blocks,
         transform_list=transforms_list + [deform],
-        write_path=output_dir if highres_aligned_name else None,
-        dataset_path=highres_aligned_name,
+        aligned_dataset=aligned_dataset,
         cluster=cluster,
+        temporary_directory=working_dir,
     )
     return deform, aligned
 
