@@ -429,18 +429,17 @@ def _align_highres_data(fix_data,
     else:
         deform_transform_dataset = None
     print('Calculate transformation for local alignment', flush=True)
-    deform = deform_transform_dataset # !!!!
-    # deform = distributed_alignment_pipeline(
-    #     fix_data, mov_data,
-    #     fix_spacing, mov_spacing,
-    #     steps,
-    #     partitionsize,
-    #     output_blocks,
-    #     static_transform_list=transforms_list,
-    #     output_transform=deform_transform_dataset,
-    #     cluster=cluster,
-    #     temporary_directory=working_dir,
-    # )
+    deform = distributed_alignment_pipeline(
+        fix_data, mov_data,
+        fix_spacing, mov_spacing,
+        steps,
+        partitionsize,
+        output_blocks,
+        static_transform_list=transforms_list,
+        output_transform=deform_transform_dataset,
+        cluster=cluster,
+        temporary_directory=working_dir,
+    )
 
     if output_dir and highres_aligned_name:
         aligned_dataset = n5_utils.create_dataset(

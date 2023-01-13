@@ -13,13 +13,14 @@ from dask.utils import SerializableLock
 
 @cluster
 def distributed_apply_transform(
-    fix_zarr, mov_zarr,
+    fix, mov,
     fix_spacing, mov_spacing,
     partition_size,
-    output_blocks,
+    output_chunk_size,
     transform_list,
     overlap_factor=0.5,
     aligned_dataset=None,
+    transform_spacing=None,
     temporary_directory=None,
     cluster=None,
     cluster_kwargs={},
@@ -31,10 +32,10 @@ def distributed_apply_transform(
 
     Parameters
     ----------
-    fix : zarr array
+    fix_zarr : zarr array
         The fixed image data
 
-    mov : zarr array
+    mov_zarr : zarr array
         The moving image data
 
     fix_spacing : 1d array
@@ -45,22 +46,26 @@ def distributed_apply_transform(
         The spacing in physical units (e.g. mm or um) between voxels
         of the moving image. Length must equal `mov.ndim`
 
+    partition_size : int
+        The block size used for distributing the work
+
+    output_chunk_size :
+        Output chunk size
+
     transform_list : list
         The list of transforms to apply. These may be 2d arrays of shape 4x4
         (affine transforms), or ndarrays of `fix.ndim` + 1 dimensions (deformations).
         Zarr arrays work just fine.
 
-    partition_size : int
-        The block size used for distributing the work
-
     overlap_factor : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
 
-    inverse_transforms : bool (default: False)
-        Set to true if the list of transforms are all inverted
-
     aligned_dataset : ndarray (default: None)
         A subpath in the zarr array to write the resampled data to
+
+    transform_spacing : tuple
+        Spacing to be applied for each transform. If not set
+        it uses the fixed spacing
 
     temporary_directory : string (default: None)
         A parent directory for temporary data written to disk during computation
@@ -84,8 +89,9 @@ def distributed_apply_transform(
     Returns
     -------
     resampled : array
-        The resampled moving data with transform_list applied. If write_path is not None
-        this will be a zarr array. Otherwise it is a numpy array.
+        The resampled moving data with transform_list applied. 
+        If aligned_dataset is not None this will be the output
+        Otherwise it returns a numpy array.
     """
 
     # temporary file paths and ensure inputs are zarr
@@ -94,16 +100,18 @@ def distributed_apply_transform(
     )
     fix_zarr_path = temporary_directory.name + '/fix.zarr'
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
-    fix_zarr = ut.numpy_to_zarr(fix_zarr, output_blocks, fix_zarr_path)
-    mov_zarr = ut.numpy_to_zarr(mov_zarr, output_blocks, mov_zarr_path)
+    fix_zarr = ut.numpy_to_zarr(fix, output_chunk_size, fix_zarr_path)
+    mov_zarr = ut.numpy_to_zarr(mov, output_chunk_size, mov_zarr_path)
 
     # ensure all deforms are zarr
     zarr_transform_list = []
-    zarr_transform_blocks = output_blocks + (fix_zarr.ndim,)
+    zarr_transform_blocks = output_chunk_size + (fix_zarr.ndim,)
     for iii, transform in enumerate(transform_list):
         if transform.shape != (4, 4):
             zarr_path = temporary_directory.name + f'/deform{iii}.zarr'
-            transform = ut.numpy_to_zarr(transform, zarr_transform_blocks, zarr_path)
+            transform = ut.numpy_to_zarr(transform, 
+                                         zarr_transform_blocks,
+                                         zarr_path)
         zarr_transform_list.append(transform)
 
     # get overlap and number of blocks
@@ -111,16 +119,20 @@ def distributed_apply_transform(
     nblocks = np.ceil(np.array(fix_zarr.shape) / partition_dims).astype(int)
     overlaps = np.round(partition_dims * overlap_factor).astype(int)
 
-    # get transform spacing
-    # if this is 
-    if 'transform_spacing' not in kwargs.keys():
-        transform_spacing_list = (np.array(fix_spacing),) * len(zarr_transform_list)
-    elif not isinstance(kwargs['transform_spacing'], tuple):
+    # ensure there's a 1:1 correspondence between transform spacing 
+    # and transform list
+    if transform_spacing is None:
+        # create transform spacing using same value as fixed image
+        transform_spacing_list = ((np.array(fix_spacing),) * 
+            len(zarr_transform_list))
+    elif not isinstance(transform_spacing, tuple):
         # create a corresponding transform spacing for each transform
-        transform_spacing_list = (kwargs['transform_spacing'],) * len(zarr_transform_list)
+        transform_spacing_list = ((transform_spacing,) *
+            len(zarr_transform_list))
     else:
         # transform spacing is a tuple
-        transform_spacing_list = kwargs['transform_spacing']
+        # assume it's length matches transform list length
+        transform_spacing_list = transform_spacing
 
     # store block coordinates in a dask array
     blocks_coords = np.empty(nblocks, dtype=list)
@@ -146,7 +158,7 @@ def distributed_apply_transform(
         transform_list=zarr_transform_list,
         transform_spacing_list=transform_spacing_list,
         dtype=fix_zarr.dtype,
-        chunks=output_blocks,
+        chunks=output_chunk_size,
         *kwargs
     )
 
@@ -172,7 +184,11 @@ def _transform_single_block(block_coords,
                             transform_list=[],
                             transform_spacing_list=[],
                             **additional_transform_args):
+    """
+    Block transform function
+    """
     print('Transform block: ', block_coords, flush=True)
+
     # fetch fixed image slices and read fix
     fix_slices = block_coords.item()
     fix_block = fix[fix_slices]
