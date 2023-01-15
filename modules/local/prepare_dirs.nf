@@ -21,6 +21,7 @@ process PREPARE_DIRS {
                 .findAll { it ? true : false }
                 .inject '', {acc, val -> "${acc} ${val}"}
     """
+    echo "Create directories: ${dirs}"
     for d in "${dirs}"; do
         mkdir -p \$d
     done
