@@ -27,20 +27,6 @@ workflow LOCAL_BIGSTREAM_ALIGN {
 
     main:
 
-    def cluster_info = start_cluster([
-        normalized_file_name(params.fixed_highres_path),
-        normalized_file_name(params.moving_highres_path),
-        normalized_file_name(params.global_output_path),
-        normalized_file_name(params.local_output_path),
-        normalized_file_name(params.local_working_path),
-    ])
-    | map {
-        def (cluster_id, cluster_scheduler_ip, cluster_work_dir, connected_workers) = it
-        [
-            cluster_scheduler_ip, cluster_work_dir,
-        ]
-    }
-
     def bigstream_input = align_input
     | map {
         def (highres_fixed, highres_fixed_dataset,
@@ -64,6 +50,35 @@ workflow LOCAL_BIGSTREAM_ALIGN {
             normalized_file_name(highres_output),
             highres_transform_name,
             highres_aligned_name,
+        ]
+    }
+
+    def cluster_info = bigstream_input.map {
+        def (lowres_fixed, lowres_fixed_dataset,
+             lowres_moving, lowres_moving_dataset,
+             lowres_steps,
+             global_transform_dir,
+             global_transform_name,
+             lowres_aligned_name,
+             highres_fixed, highres_fixed_dataset,
+             highres_moving, highres_moving_dataset,
+             highres_steps,
+             highres_output,
+             highres_transform_name,
+             highres_aligned_name) = it
+        [
+            normalized_file_name(highres_fixed),
+            normalized_file_name(highres_moving),
+            normalized_file_name(global_transform_dir),
+            normalized_file_name(highres_output),
+            normalized_file_name(params.local_working_path),
+        ]
+    }
+    | start_cluster
+    | map {
+        def (cluster_id, cluster_scheduler_ip, cluster_work_dir, connected_workers) = it
+        [
+            cluster_scheduler_ip, cluster_work_dir,
         ]
     }
 
