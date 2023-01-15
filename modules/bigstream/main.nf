@@ -13,7 +13,7 @@ process BIGSTREAM {
         highres_moving_path,
         parentfile(lowres_output_path),
         parentfile(highres_output_path),
-        normalized_file_name(params.local_working_path),
+        parentfile(params.local_working_path),
         parentfile(params.dask_config),
     ]) }
 
