@@ -56,6 +56,10 @@ workflow BIGSTREAM_REGISTRATION {
 
     def lowres_alignment_results = GLOBAL_BIGSTREAM_ALIGN(lowres_inputs)
 
+    lowres_alignment_results.subscribe {
+        log.debug "Completed lowres alignment for: $it"
+    }
+
     def highres_inputs = registration_input
     | join(lowres_alignment_results, by:[0,1,2,3])
     | map {
@@ -71,7 +75,7 @@ workflow BIGSTREAM_REGISTRATION {
              highres_output,
              highres_transform_name,
              highres_aligned_name) = it
-        [
+        def r = [
             highres_fixed, highres_fixed_dataset,
             highres_moving, highres_moving_dataset,
             highres_steps,
@@ -81,9 +85,15 @@ workflow BIGSTREAM_REGISTRATION {
             lowres_output,
             lowres_transform_name,
         ]
+        log.debug "Prepare highres alignment: $r"
+        return r
     }
 
     def highres_alignment_results = LOCAL_BIGSTREAM_ALIGN(highres_inputs)
+
+    highres_alignment_results.subscribe {
+        log.debug "Completed highres alignment for: $it"
+    }
 
     emit:
     done = highres_alignment_results
