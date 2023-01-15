@@ -17,8 +17,8 @@ process BIGSTREAM {
         parentfile(params.dask_config),
     ]) }
 
-    memory { "${params.bigstream_mem_gb} GB" }
-    cpus { params.bigstream_cpus }
+    memory { "${mem_gb} GB" }
+    cpus { ncpus }
 
     input:
     tuple val(lowres_fixed_path), val(lowres_fixed_subpath),
@@ -27,25 +27,35 @@ process BIGSTREAM {
           val(lowres_output_path),
           val(lowres_transform_name),
           val(lowres_aligned_name),
-          val(lowres_use_existing_transform),
           val(highres_fixed_path), val(highres_fixed_subpath),
           val(highres_moving_path), val(highres_moving_subpath),
           val(highres_steps), // local steps
           val(highres_output_path),
           val(highres_transform_name),
-          val(highres_aligned_name),
-          val(scheduler),
-          val(scheduler_workdir)
+          val(highres_aligned_name)
+
+    val(lowres_use_existing_transform)
+
+    val(ncpus)
+
+    val(mem_gb)
+
+    tuple val(cluster_scheduler),
+          val(cluster_workdir)
 
     output:
-    tuple val(lowres_output_path),
+    tuple val(lowres_fixed_path), val(lowres_fixed_subpath),
+          val(lowres_moving_path), val(lowres_moving_subpath),
+          val(lowres_output_path),
           val(lowres_transform_name),
           val(lowres_aligned_name),
+          val(highres_fixed_path), val(highres_fixed_subpath),
+          val(highres_moving_path), val(highres_moving_subpath),
           val(highres_output_path),
           val(highres_transform_name),
-          val(highres_aligned_name),
-          val(scheduler),
-          val(scheduler_workdir)
+          val(highres_aligned_name)
+    tuple val(cluster_scheduler),
+          val(cluster_workdir)
 
     script:
     def lowres_steps_arg = lowres_steps
@@ -90,8 +100,8 @@ process BIGSTREAM {
     def highres_aligned_name = params.local_aligned_name
         ? "--local-aligned-name ${params.local_aligned_name}"
         : ''
-    def scheduler_arg = scheduler
-        ? "--dask-scheduler ${scheduler}"
+    def scheduler_arg = cluster_scheduler
+        ? "--dask-scheduler ${cluster_scheduler}"
         : ''
     def use_existing_lowres_transform = lowres_use_existing_transform
         ? '--use-existing-global-transform'

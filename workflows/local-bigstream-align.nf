@@ -27,17 +27,23 @@ workflow LOCAL_BIGSTREAM_ALIGN {
 
     main:
 
-    def align_results = start_cluster([
+    def cluster_info = start_cluster([
         normalized_file_name(params.fixed_highres_path),
         normalized_file_name(params.moving_highres_path),
         normalized_file_name(params.global_output_path),
         normalized_file_name(params.local_output_path),
         normalized_file_name(params.local_working_path),
     ])
-    | combine(align_input)
     | map {
-        def (cluster_id, scheduler_ip, cluster_work_dir, connected_workers,
-             highres_fixed, highres_fixed_dataset,
+        def (cluster_id, cluster_scheduler_ip, cluster_work_dir, connected_workers) = it
+        [
+            cluster_scheduler_ip, cluster_work_dir,
+        ]
+    }
+
+    def bigstream_input = align_input
+    | map {
+        def (highres_fixed, highres_fixed_dataset,
              highres_moving, highres_moving_dataset,
              highres_steps,
              highres_output,
@@ -52,45 +58,23 @@ workflow LOCAL_BIGSTREAM_ALIGN {
             normalized_file_name(global_transform_dir),
             global_transform_name,
             '', // lowres_aligned_name
-            true, // use_existing_global_transform
             normalized_file_name(highres_fixed), highres_fixed_dataset,
             normalized_file_name(highres_moving), highres_moving_dataset,
             highres_steps,
             normalized_file_name(highres_output),
             highres_transform_name,
             highres_aligned_name,
-            scheduler_ip,
-            cluster_work_dir,
-        ]
-    }
-    | BIGSTREAM
-    | map {
-          def (lowres_output_path,
-               lowres_transform_name,
-               lowres_aligned_name,
-               highres_output_path,
-               highres_transform_name,
-               highres_aligned_name,
-               scheduler,
-               scheduler_workdir) = it
-        [
-            scheduler_workdir,
-            scheduler,
-            lowres_output_path,
-            lowres_transform_name,
-            lowres_aligned_name,
-            highres_output_path,
-            highres_transform_name,
-            highres_aligned_name,
         ]
     }
 
-    done = stop_cluster(align_results.map { it[0] })
-    | join(align_results, by:0)
-    | map {
-        it[2..-1] // return everything except scheduler info
-    }
+    def bigstream_results = BIGSTREAM(bigstream_input,
+                                      true, // use_existing_global_transform
+                                      params.bigstream_highres_cpus,
+                                      params.bigstream_highres_mem_gb,
+                                      cluster_info)
+
+    stop_cluster(bigstream_results[1].map{ it[1] })
 
     emit:
-    done
+    done = bigstream_results[0]
 }

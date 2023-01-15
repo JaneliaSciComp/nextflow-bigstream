@@ -25,7 +25,7 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
 
     main:
     // global alignment does not require a dask cluster
-    done = align_input
+    def bigstream_input = align_input
     | map {
         log.info "Run global registration with: $it"
         def (lowres_fixed, lowres_fixed_dataset,
@@ -41,19 +41,24 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
             normalized_file_name(lowres_output),
             lowres_transform_name,
             lowres_aligned_name,
-            params.use_existing_global_transform,
             '', '', // highres_fixed, highres_fixed_dataset,
             '', '', // highres_moving, highres_moving_dataset,
             '', // highres_steps
             '', // highres_output
             '', // highres_transform_name,
             '', // highres_aligned_name,
-            '', // scheduler_ip 
-            '', // scheduler_work_dir
         ]
     }
-    | BIGSTREAM
+
+    def bigstream_results = BIGSTREAM(bigstream_input,
+                                      params.use_existing_global_transform,
+                                      params.bigstream_lowres_cpus,
+                                      params.bigstream_lowres_mem_gb,
+                                      [
+                                         '', // scheduler_ip
+                                         '', // cluster_work_dir
+                                      ])
 
     emit:
-    done
+    done = bigstream_results[0]
 }

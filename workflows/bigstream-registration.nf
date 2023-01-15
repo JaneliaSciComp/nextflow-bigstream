@@ -7,38 +7,84 @@ include {
 } from '../subworkflows/stop_cluster'
 
 include {
-    BIGSTREAM;
-} from '../modules/bigstream/main'
+    GLOBAL_BIGSTREAM_ALIGN;
+} from './global-bigstream-align'
+
+include {
+    LOCAL_BIGSTREAM_ALIGN;
+} from './local-bigstream-align'
 
 workflow BIGSTREAM_REGISTRATION {
     take:
-    registration_input // [fixed_lowres, fixed_lowres_dataset, moving_lowres, moving_lowres_dataset, 
-                       //  fixed_highres, fixed_highres_dataset, moving_highres, moving_highres_dataset,
-                       //  output, output_dataset]
-
+    registration_input // [lowres_fixed, lowres_fixed_dataset,
+                       //  lowres_moving, lowres_moving_dataset,
+                       //  lowres_steps,
+                       //  lowres_output,
+                       //  lowres_transform_name,
+                       //  lowres_aligned_name,
+                       //  highres_fixed, highres_fixed_dataset,
+                       //  highres_moving, highres_moving_dataset,
+                       //  highres_steps,
+                       //  highres_output,
+                       //  highres_transform_name,
+                       //  highres_aligned_name]
     main:
 
-    start_cluster()
-    | combine(registration_input)
+    def lowres_inputs = registration_input
     | map {
-        def (cluster_id, scheduler_ip, cluster_work_dir, connected_workers,
-             fixed_lowres, fixed_lowres_dataset, moving_lowres, moving_lowres_dataset,
-             fixed_highres, fixed_highres_dataset, moving_highres, moving_highres_dataset,
-             output, output_dataset) = it
+        def (lowres_fixed, lowres_fixed_dataset,
+             lowres_moving, lowres_moving_dataset,
+             lowres_steps,
+             lowres_output,
+             lowres_transform_name,
+             lowres_aligned_name,
+             highres_fixed, highres_fixed_dataset,
+             highres_moving, highres_moving_dataset,
+             highres_steps,
+             highres_output,
+             highres_transform_name,
+             highres_aligned_name) = it
         [
-            fixed_lowres, fixed_lowres_dataset,
-            moving_lowres, moving_lowres_dataset,
-            fixed_highres, fixed_highres_dataset,
-            moving_highres, moving_highres_dataset,
-            output, output_dataset,
-            scheduler_ip, cluster_work_dir
+            lowres_fixed, lowres_fixed_dataset,
+            lowres_moving, lowres_moving_dataset,
+            lowres_steps,
+            lowres_output,
+            lowres_transform_name,
+            lowres_aligned_name,
         ]
     }
-    | BIGSTREAM
+
+    def lowres_alignment_results = GLOBAL_BIGSTREAM_ALIGN(lowres_inputs)
+
+    def highres_inputs = registration_input
+    | join(lowres_alignment_results, by:[0,1,2,3])
     | map {
-        def (output, output_dataset,
-            scheduler_ip, cluster_work_dir) = it
-        return cluster_work_dir
+        def (lowres_fixed, lowres_fixed_dataset,
+             lowres_moving, lowres_moving_dataset,
+             lowres_steps,
+             lowres_output,
+             lowres_transform_name,
+             lowres_aligned_name,
+             highres_fixed, highres_fixed_dataset,
+             highres_moving, highres_moving_dataset,
+             highres_steps,
+             highres_output,
+             highres_transform_name,
+             highres_aligned_name) = it
+        [
+            highres_fixed, highres_fixed_dataset,
+            highres_moving, highres_moving_dataset,
+            highres_steps,
+            highres_output,
+            highres_transform_name,
+            highres_aligned_name,
+            lowres_output,
+            lowres_transform_name,
+        ]
     }
-    | stop_cluster
+
+    def highres_alignment_results = LOCAL_BIGSTREAM_ALIGN(highres_inputs)
+
+    emit:
+    done = highres_alignment_results
 }
