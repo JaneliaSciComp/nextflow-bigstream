@@ -30,7 +30,37 @@ workflow BIGSTREAM_REGISTRATION {
                        //  highres_aligned_name]
     main:
 
-    def lowres_inputs = registration_input
+    def normalized_inputs = registration_input
+    | map {
+        def (lowres_fixed, lowres_fixed_dataset,
+             lowres_moving, lowres_moving_dataset,
+             lowres_steps,
+             lowres_output,
+             lowres_transform_name,
+             lowres_aligned_name,
+             highres_fixed, highres_fixed_dataset,
+             highres_moving, highres_moving_dataset,
+             highres_steps,
+             highres_output,
+             highres_transform_name,
+             highres_aligned_name) = it
+        [
+            normalized_file_name(lowres_fixed), lowres_fixed_dataset,
+            normalized_file_name(lowres_moving), lowres_moving_dataset,
+            lowres_steps,
+            normalized_file_name(lowres_output),
+            lowres_transform_name,
+            lowres_aligned_name,
+            normalized_file_name(highres_fixed), highres_fixed_dataset,
+            normalized_file_name(highres_moving), highres_moving_dataset,
+            highres_steps,
+            normalized_file_name(highres_output),
+            highres_transform_name,
+            highres_aligned_name            
+        ]
+    }
+
+    def lowres_inputs = normalized_inputs
     | map {
         def (lowres_fixed, lowres_fixed_dataset,
              lowres_moving, lowres_moving_dataset,
@@ -62,7 +92,7 @@ workflow BIGSTREAM_REGISTRATION {
         log.debug "Completed lowres alignment for: $it"
     }
 
-    def highres_inputs = registration_input
+    def highres_inputs = normalized_inputs
     | join(lowres_alignment_results, by:[0,1,2,3])
     | map {
         def (lowres_fixed, lowres_fixed_dataset,
