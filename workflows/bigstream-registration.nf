@@ -14,6 +14,10 @@ include {
     LOCAL_BIGSTREAM_ALIGN;
 } from './local-bigstream-align'
 
+include {
+    normalized_file_name;
+} from '../lib/utils'
+
 workflow BIGSTREAM_REGISTRATION {
     take:
     registration_input // [lowres_fixed, lowres_fixed_dataset,
