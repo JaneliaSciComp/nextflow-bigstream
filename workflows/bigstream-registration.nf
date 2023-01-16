@@ -44,7 +44,7 @@ workflow BIGSTREAM_REGISTRATION {
              highres_output,
              highres_transform_name,
              highres_aligned_name) = it
-        [
+        def r = [
             lowres_fixed, lowres_fixed_dataset,
             lowres_moving, lowres_moving_dataset,
             lowres_steps,
@@ -52,6 +52,8 @@ workflow BIGSTREAM_REGISTRATION {
             lowres_transform_name,
             lowres_aligned_name,
         ]
+        log.debug "Prepare lowres alignment: $it -> $r"
+        return r
     }
 
     def lowres_alignment_results = GLOBAL_BIGSTREAM_ALIGN(lowres_inputs)
@@ -85,7 +87,7 @@ workflow BIGSTREAM_REGISTRATION {
             lowres_output,
             lowres_transform_name,
         ]
-        log.debug "Prepare highres alignment: $r"
+        log.debug "Prepare highres alignment: $it -> $r"
         return r
     }
 
