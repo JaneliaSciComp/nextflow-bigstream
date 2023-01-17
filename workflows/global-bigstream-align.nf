@@ -1,12 +1,4 @@
 include {
-    start_cluster;
-} from '../subworkflows/start_cluster'
-
-include {
-    stop_cluster;
-} from '../subworkflows/stop_cluster'
-
-include {
     BIGSTREAM;
 } from '../modules/bigstream/main'
 
