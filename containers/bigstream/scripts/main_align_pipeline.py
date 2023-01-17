@@ -442,27 +442,32 @@ def _align_highres_data(fix_data,
     )
 
     if output_dir and highres_aligned_name:
+        # Apply local transformation only if 
+        # highres aligned output name is set
+        aligned_dataset_name = output_dir + '/' + highres_aligned_name
         aligned_dataset = n5_utils.create_dataset(
-            output_dir + '/' + highres_aligned_name,
+            aligned_dataset_name,
             highres_subpath,
             fix_data.shape,
             output_blocks,
             fix_data.dtype,
         )
+        print('Apply local transformation -> ', aligned_dataset_name,
+              flush=True)
+        aligned = distributed_apply_transform(
+            fix_data, mov_data,
+            fix_spacing, mov_spacing,
+            partitionsize,
+            output_blocks,
+            transform_list=transforms_list + [deform],
+            aligned_dataset=aligned_dataset,
+            cluster=cluster,
+            temporary_directory=working_dir,
+        )
     else:
         aligned_dataset = None
-    print('Apply local transformation', flush=True)
+        aligned = None
 
-    aligned = distributed_apply_transform(
-        fix_data, mov_data,
-        fix_spacing, mov_spacing,
-        partitionsize,
-        output_blocks,
-        transform_list=transforms_list + [deform],
-        aligned_dataset=aligned_dataset,
-        cluster=cluster,
-        temporary_directory=working_dir,
-    )
     return deform, aligned
 
 
