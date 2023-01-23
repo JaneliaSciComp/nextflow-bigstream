@@ -100,9 +100,6 @@ process BIGSTREAM {
     def highres_aligned_name = params.local_aligned_name
         ? "--local-aligned-name ${params.local_aligned_name}"
         : ''
-    def scheduler_arg = cluster_scheduler
-        ? "--dask-scheduler ${cluster_scheduler}"
-        : ''
     def use_existing_lowres_transform = lowres_use_existing_transform
         ? '--use-existing-global-transform'
         : ''
@@ -111,6 +108,9 @@ process BIGSTREAM {
         : ''
     def highres_working_dir = params.local_working_path
         ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
+        : ''
+    def scheduler_arg = cluster_scheduler
+        ? "--dask-scheduler ${cluster_scheduler}"
         : ''
     def dask_config_arg = params.dask_config
         ? "--dask-config ${normalized_file_name(params.dask_config)}"

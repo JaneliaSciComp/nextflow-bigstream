@@ -45,23 +45,20 @@ def _define_args():
                              dest='local_transform_subpath',
                              help='Transformation to be applied')
 
-    args_parser.add_argument('--output-dir',
-                             dest='output_dir',
+    args_parser.add_argument('--output',
+                             dest='output',
                              help='Output directory')
-    args_parser.add_argument('--working-dir',
-                             dest='working_dir',
-                             help='Working directory')
-    args_parser.add_argument('--warped-name',
-                             dest='warped_name',
-                             help='Name of the deformed image')
-    args_parser.add_argument('--warped-subpath',
-                             dest='warped_subpath',
+    args_parser.add_argument('--output-subpath',
+                             dest='output_subpath',
                              help='Subpath for the warped output')
     args_parser.add_argument('--output-chunk-size',
                              dest='output_chunk_size',
                              default=128,
                              type=int,
                              help='Output chunk size')
+    args_parser.add_argument('--working-dir',
+                             dest='working_dir',
+                             help='Working directory')
 
     args_parser.add_argument('--partition-blocksize',
                              dest='partition_blocksize',
@@ -85,7 +82,7 @@ def _run_apply_transform(args):
     # Read the highres inputs - if highres is not defined default it to lowres
     fix_subpath = args.fixed_subpath
     mov_subpath = args.moving_subpath if args.moving_subpath else fix_subpath
-    warped_subpath = args.warped_subpath if args.warped_subpath else mov_subpath
+    output_subpath = args.output_subpath if args.output_subpath else mov_subpath
 
     fix_data, fix_attrs = n5_utils.open(args.fixed, fix_subpath)
     mov_data, mov_attrs = n5_utils.open(args.moving, mov_subpath)
@@ -113,10 +110,10 @@ def _run_apply_transform(args):
 
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
 
-    if args.output_dir and args.warped_name:
-        warped_dataset = n5_utils.create_dataset(
-            args.output_dir + '/' + args.warped_name,
-            warped_subpath,
+    if args.output:
+        output_dataset = n5_utils.create_dataset(
+            args.output,
+            output_subpath,
             fix_data.shape,
             output_blocks,
             fix_data.dtype,
@@ -128,17 +125,17 @@ def _run_apply_transform(args):
         else:
             transforms_list = []            
 
-        warped = distributed_apply_transform(
+        output = distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
             args.partition_blocksize,
             output_blocks,
             transform_list=transforms_list + [local_deform],
-            aligned_dataset=warped_dataset,
+            aligned_dataset=output_dataset,
             cluster=cluster,
             temporary_directory=args.working_dir,
         )
-        return warped
+        return output
     else:
         return None
 
