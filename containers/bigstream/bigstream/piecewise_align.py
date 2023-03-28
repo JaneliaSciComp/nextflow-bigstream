@@ -1,5 +1,6 @@
 import os, tempfile
 import numpy as np
+import time
 from itertools import product
 from scipy.interpolate import LinearNDInterpolator
 from dask.distributed import as_completed, wait
@@ -28,7 +29,7 @@ def distributed_piecewise_alignment_pipeline(
     cluster_kwargs={},
     temporary_directory=None,
     write_path=None,
-    output_chunk_size=128,
+    write_group_interval=30,
     **kwargs,
 ):
     """
@@ -118,8 +119,9 @@ def distributed_piecewise_alignment_pipeline(
         process memory, set this parameter to a location where the transform
         can be written to disk as a zarr file.
 
-    output_chunk_size: integer (default: 128)
-        Chunk size for the output container
+    write_group_interval : float (default: 30.)
+        The time each of the 27 mutually exclusive write block groups have
+        each round to write finished data.
 
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
@@ -141,18 +143,17 @@ def distributed_piecewise_alignment_pipeline(
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
     mov_mask_zarr_path = temporary_directory.name + '/mov_mask.zarr'
-    zarr_blocks = (output_chunk_size,)*fix.ndim
-    fix_zarr = ut.numpy_to_zarr(fix, zarr_blocks, fix_zarr_path)
-    mov_zarr = ut.numpy_to_zarr(mov, zarr_blocks, mov_zarr_path)
-    if fix_mask is not None: fix_mask_zarr = ut.numpy_to_zarr(fix_mask, zarr_blocks, fix_mask_zarr_path)
-    if mov_mask is not None: mov_mask_zarr = ut.numpy_to_zarr(mov_mask, zarr_blocks, mov_mask_zarr_path)
+    fix_zarr = ut.numpy_to_zarr(fix, blocksize, fix_zarr_path)
+    mov_zarr = ut.numpy_to_zarr(mov, blocksize, mov_zarr_path)
+    if fix_mask is not None: fix_mask_zarr = ut.numpy_to_zarr(fix_mask, blocksize, fix_mask_zarr_path)
+    if mov_mask is not None: mov_mask_zarr = ut.numpy_to_zarr(mov_mask, blocksize, mov_mask_zarr_path)
 
     # zarr files for initial deformations
     new_list = []
     for iii, transform in enumerate(static_transform_list):
         if transform.shape != (4, 4) and len(transform.shape) != 1:
             path = temporary_directory.name + f'/deform{iii}.zarr'
-            transform = ut.numpy_to_zarr(transform, zarr_blocks + (transform.shape[-1],), path)
+            transform = ut.numpy_to_zarr(transform, tuple(blocksize) + (transform.shape[-1],), path)
         new_list.append(transform)
     static_transform_list = new_list
 
@@ -161,7 +162,7 @@ def distributed_piecewise_alignment_pipeline(
         output_transform = ut.create_zarr(
             write_path,
             fix.shape + (fix.ndim,),
-            zarr_blocks + (fix.ndim,),
+            tuple(blocksize) + (fix.ndim,),
             np.float32,
         )
 
@@ -337,21 +338,25 @@ def distributed_piecewise_alignment_pipeline(
         if not write_path:
             return transform
         else:
+            # wait until the correct write window for this write group
+            # TODO: if a worker can query the set of running tasks, I may be able to skip
+            #       groups that are completely written
+            write_group = np.sum(np.array(block_index) % 3 * (9, 3, 1))
+            while not (write_group < time.time() / write_group_interval % 27 < write_group + .5):
+                time.sleep(1)
             output_transform[fix_slices] = output_transform[fix_slices] + transform
             return True
     # END CLOSURE
 
-    # for small alignments
+    # submit all alignments to cluster
+    futures = cluster.client.map(
+        align_single_block, indices,
+        static_transform_list=static_transform_list,
+    )
+
+    # handle output for in memory and out of memory cases
     if not write_path:
-
-        # submit all alignments to cluster
-        futures = cluster.client.map(
-            align_single_block, indices,
-            static_transform_list=static_transform_list,
-        )
         future_keys = [f.key for f in futures]
-
-        # initialize container, monitor progress, write blocks when finished
         transform = np.zeros(fix.shape + (fix.ndim,), dtype=np.float32)
         for batch in as_completed(futures, with_results=True).batches():
             for future, result in batch:
@@ -359,54 +364,8 @@ def distributed_piecewise_alignment_pipeline(
                 transform[indices[iii][1]] += result
                 print('Completed block: ', indices[iii][0], flush=True)
         return transform
-
-    # for large alignments
     else:
-
-        # get zarr blocks touched by every alignment block
-        def get_zarr_blocks(coords):
-            ranges = [(a.start//b, (a.stop-1)//b+1) for a, b in zip(coords, zarr_blocks)]
-            return set(product(*[range(a[0], a[1]) for a in ranges]))
-        write_blocks = [get_zarr_blocks(index[1]) for index in indices]
-
-        # a function for locking out conflicting writes
-        def get_locks(running):
-            locked_blocks = set().union(*[write_blocks[x] for x in range(len(running)) if running[x]])
-            return [not locked_blocks.isdisjoint(x) for x in write_blocks]
-
-        # a function for submitting all non-running and non-locked blocks
-        def submit_new_blocks(indices, written, running, locked):
-            futures = []
-            future_indices = {}
-            for iii, index in enumerate(indices):
-                if not written[iii] and not running[iii] and not locked[iii]:
-                    print('Submit block: ', index[0], flush=True)
-                    f = cluster.client.submit(
-                        align_single_block, index,
-                        static_transform_list=static_transform_list,
-                    )
-                    futures.append(f)
-                    future_indices[f.key] = iii
-                    running[iii] = True
-                    locked = get_locks(running)
-            return futures, future_indices
-
-        # submit blocks as parallel as possible
-        written = [False,] * len(indices)
-        running = [False,] * len(indices)
-        locked = [False,] * len(indices)
-        futures, future_indices = submit_new_blocks(indices, written, running, locked)
-        complete_futures = as_completed(futures)
-        for future in complete_futures:  # TODO: experiment with batches
-            iii = future_indices[future.key]
-            written[iii] = True
-            running[iii] = False
-            locked = get_locks(running)
-            new_futures, new_future_indices = submit_new_blocks(indices, written, running, locked)
-            # TODO: print feedback on number of blocks submited, finished, out of total
-            complete_futures.update(new_futures)
-            future_indices = {**future_indices, **new_future_indices}
-
+        all_written = np.all( cluster.client.gather(futures) )
         return output_transform
 
 
