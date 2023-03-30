@@ -138,6 +138,11 @@ def _define_args(global_descriptor, local_descriptor):
                              dest='local_aligned_name',
                              type=str,
                              help='Local aligned name')
+    args_parser.add_argument('--local-write-group-interval',
+                             dest='local_write_group_interval',
+                             default=30,
+                             type=int,
+                             help="Write group interval for distributed processed blocks")
 
     _define_ransac_args(args_parser.add_argument_group(
         description='Local ransac arguments'),
@@ -395,6 +400,7 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
             args.local_aligned_name,
             args.moving_highres_subpath,
             args.output_chunk_size,
+            args.local_write_group_interval,
             cluster,
             working_dir,
         )
@@ -414,6 +420,7 @@ def _align_highres_data(fix_data,
                         highres_aligned_name,
                         highres_subpath,
                         output_chunk_size,
+                        write_group_interval,
                         cluster,
                         working_dir):
     print('Run high res alignment:', steps, partitionsize, flush=True)
@@ -437,6 +444,7 @@ def _align_highres_data(fix_data,
         output_blocks,
         static_transform_list=transforms_list,
         output_transform=deform_transform_dataset,
+        write_group_interval=write_group_interval,
         cluster=cluster,
         temporary_directory=working_dir,
     )

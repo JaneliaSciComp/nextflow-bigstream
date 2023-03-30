@@ -2,6 +2,7 @@ import os
 import tempfile
 import numpy as np
 import bigstream.utility as ut
+import time
 import traceback
 
 from functools import partial
@@ -9,9 +10,7 @@ from itertools import product
 from dask.distributed import as_completed
 from ClusterWrap.decorator import cluster
 from bigstream.align import alignment_pipeline
-from bigstream.transform import apply_transform
 from bigstream.transform import apply_transform_to_coordinates
-from bigstream.transform import compose_transforms
 
 
 def _get_moving_block(fix_block,
@@ -57,12 +56,13 @@ def _align_single_block(block_index,
                         fix_mask, mov_mask,
                         align_steps,
                         static_transform_list,
-                        result_transform):
+                        result_transform,
+                        write_group_interval):
 
     # print some feedback
     print('Align block: ', block_index,
-          '\nBlock coords: ',block_coords,
-          '\nBlock neighbors: ',block_neighbors,
+          '\nBlock coords: ', block_coords,
+          '\nBlock neighbors: ', block_neighbors,
           flush=True)
 
     # get the coordinates, read fixed data
@@ -72,7 +72,7 @@ def _align_single_block(block_index,
     fix_block_coords = []
     for corner in list(product([0, 1], repeat=3)):
         a = [x.stop-1 if y else x.start
-                 for x, y in zip(block_coords, corner)]
+             for x, y in zip(block_coords, corner)]
         fix_block_coords.append(a)
 
     fix_block_coords = np.array(fix_block_coords)
@@ -94,7 +94,7 @@ def _align_single_block(block_index,
             transform)
         updated_block_transform_list.append(block_transform)
 
-    block_transform_list = updated_block_transform_list[::-1] # reverse it
+    block_transform_list = updated_block_transform_list[::-1]  # reverse it
 
     # get moving image crop, read moving data
     mov_block_coords = np.round(
@@ -111,15 +111,18 @@ def _align_single_block(block_index,
     if fix_mask:
         ratio = np.array(fix_mask.shape) / full_fix.shape
         fix_mask_start = np.round(ratio * fix_block_coords[0]).astype(int)
-        fix_mask_stop = np.round(ratio * (fix_block_coords[-1] + 1)).astype(int)
-        fix_mask_slices = tuple(slice(a, b) for a, b in zip(fix_mask_start, fix_mask_stop))
+        fix_mask_stop = np.round(
+            ratio * (fix_block_coords[-1] + 1)).astype(int)
+        fix_mask_slices = tuple(slice(a, b)
+                                for a, b in zip(fix_mask_start, fix_mask_stop))
         fix_block_mask = fix_mask[fix_mask_slices]
 
     if mov_mask:
         ratio = np.array(mov_mask.shape) / full_mov.shape
         mov_mask_start = np.round(ratio * mov_start).astype(int)
         mov_mask_stop = np.round(ratio * mov_stop).astype(int)
-        mov_mask_slices = tuple(slice(a, b) for a, b in zip(mov_mask_start, mov_mask_stop))
+        mov_mask_slices = tuple(slice(a, b)
+                                for a, b in zip(mov_mask_start, mov_mask_stop))
         mov_block_mask = mov_mask[mov_mask_slices]
 
     # get moving image origin
@@ -153,7 +156,7 @@ def _align_single_block(block_index,
         core = tuple(x - 2*y + 2 for x, y in zip(blocksize, overlaps))
         pad = tuple((2*y - 1, 2*y - 1) for y in overlaps)
         weights = np.pad(np.ones(core, dtype=np.float64),
-                        pad, mode='linear_ramp')
+                         pad, mode='linear_ramp')
         # rebalance if any neighbors are missing
         if not np.all(list(block_neighbors.values())):
             print('Rebalance', block_index)
@@ -170,14 +173,14 @@ def _align_single_block(block_index,
                     neighbor_region = tuple(
                         slices[-1*b][a] for a, b in enumerate(neighbor))
                     region = tuple(slices[b][a]
-                                for a, b in enumerate(neighbor))
+                                   for a, b in enumerate(neighbor))
                     missing_weights[region] += weights[neighbor_region]
 
             # rebalance the weights
             weights_adjustment = 1 - missing_weights
             weights = np.divide(weights, weights_adjustment,
                                 out=np.zeros_like(weights),
-                                where=weights_adjustment!=0).astype(np.float32)
+                                where=weights_adjustment != 0).astype(np.float32)
 
         # crop weights if block is on edge of domain
         nblocks = _get_nblocks(full_fix.shape, blocksize)
@@ -192,7 +195,7 @@ def _align_single_block(block_index,
         # crop any incomplete blocks (on the ends)
         if np.any(weights.shape != transform.shape[:-1]):
             crop = tuple(slice(0, s) for s in transform.shape[:-1])
-            print('Crop weights for', block_index, block_coords, 
+            print('Crop weights for', block_index, block_coords,
                   'from', weights.shape, 'to', transform.shape)
             weights = weights[crop]
 
@@ -201,6 +204,12 @@ def _align_single_block(block_index,
 
         # write the data
         if result_transform:
+            # wait until the correct write window for this write group
+            # if a worker can query the set of running tasks, I may be able to skip
+            # groups that are completely written
+            write_group = np.sum(np.array(block_index) % 3 * (9, 3, 1))
+            while not (write_group < time.time() / write_group_interval % 27 < write_group + .5):
+                time.sleep(1)
             result_transform[block_coords] += transform
     except Exception as e:
         print('Balancing weights failed for', block_index, block_coords,
@@ -217,10 +226,12 @@ def _create_single_block_align_args_from_index(block_info,
                                                fix_mask, mov_mask,
                                                align_steps,
                                                transforms_list,
-                                               result_transform):
-    return (block_info[0], # block_index
-            block_info[1], # ndim tuple of block slices
-            block_info[2], # block neighbors
+                                               result_transform,
+                                               write_group_interval):
+    return [
+            block_info[0],  # block_index
+            block_info[1],  # ndim tuple of block slices
+            block_info[2],  # block neighbors
             blocksize,
             blockoverlaps,
             fix_vol, mov_vol,
@@ -228,71 +239,9 @@ def _create_single_block_align_args_from_index(block_info,
             fix_mask, mov_mask,
             align_steps,
             transforms_list,
-            result_transform)
-
-
-def _get_block_chunks(block_slices, block_chunk_size):
-    """
-    Get all chunks for the block with the given slices
-    """
-    ranges = [(coord_slice.start//sz, (coord_slice.stop-1)//sz+1)
-              for coord_slice, sz in zip(block_slices, block_chunk_size)]
-    return set(product(*[range(a[0], a[1]) for a in ranges]))
-
-
-def _get_locks(running, all_blocks_coords, block_chunk_size):
-    """
-    Get locks for conflicting writes
-    """
-    write_blocks = [_get_block_chunks(block_coords, block_chunk_size) for block_coords in all_blocks_coords]
-
-    locked_blocks = set().union(
-        *[write_blocks[x] for x in range(len(running)) if running[x]])
-    return [not locked_blocks.isdisjoint(x) for x in write_blocks]
-
-
-def _submit_new_blocks_to_align(all_blocks_info,
-                                blocksize,
-                                blockoverlaps,
-                                fix_zarr, mov_zarr,
-                                fix_spacing, mov_spacing,
-                                fix_mask_zarr, mov_mask_zarr,
-                                align_steps,
-                                transforms_list,
-                                result_transform,
-                                result_chunk_size,
-                                written,
-                                running,
-                                locked,
-                                cluster_client):
-    futures = []
-    future_indices = {}
-    all_blocks_coords = [block_info[1] for block_info in all_blocks_info]
-    for iii, block_info in enumerate(all_blocks_info):
-        if not written[iii] and not running[iii] and not locked[iii]:
-            submit_args = _create_single_block_align_args_from_index(
-                block_info,
-                blocksize,
-                blockoverlaps,
-                fix_zarr, mov_zarr,
-                fix_spacing, mov_spacing,
-                fix_mask_zarr, mov_mask_zarr,
-                align_steps,
-                transforms_list,
-                result_transform,
-            )
-
-            print('Submit block: ', submit_args[0], flush=True)
-            f = cluster_client.submit(
-                _align_single_block,
-                *submit_args,
-            )
-
-            futures.append(f)
-            future_indices[f.key] = iii
-            running[iii] = True
-            locked = _get_locks(running, all_blocks_coords, result_chunk_size)
-    return futures, future_indices
+            result_transform,
+            write_group_interval,
+            ]
 
 
 @cluster
@@ -313,6 +262,7 @@ def distributed_alignment_pipeline(
     cluster_kwargs={},
     temporary_directory=None,
     output_transform=None,
+    write_group_interval=30,
     **kwargs,
 ):
     """
@@ -356,7 +306,7 @@ def distributed_alignment_pipeline(
         for their specific step only.
 
     partition_size : int
-        Partition size for distributing the work
+        Partition or block size for distributing the work
 
     output_blocks: tuple
         Output chunk size
@@ -402,6 +352,10 @@ def distributed_alignment_pipeline(
 
     output_transform : ndarray (default: None)
         Output transform
+
+    write_group_interval : float (default: 30.)
+        The time each of the 27 mutually exclusive write block groups have
+        each round to write finished data.
 
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
@@ -484,60 +438,33 @@ def distributed_alignment_pipeline(
                           in indices for o in neighbor_offsets}
         new_indices.append((index, coords, neighbor_flags))
     indices = new_indices
-    all_blocks_coords = [block_info[1] for block_info in indices]
 
     # establish all keyword arguments
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
-    if output_transform is not None:
-        print('Submit alignment for ', len(indices), 'blocks')
-        # large alignments that spills over to disk
-        written = [False,] * len(indices)
-        running = [False,] * len(indices)
-        locked = [False,] * len(indices)
-        submit_remaining_blocks = partial(
-            _submit_new_blocks_to_align,
-            indices,
-            partition_dims,
-            overlaps,
-            fix_zarr, mov_zarr,
-            fix_spacing, mov_spacing,
-            fix_mask_zarr, mov_mask_zarr,
-            steps,
-            static_transform_list,
-            output_transform,
-            output_blocks,
-            written, running, locked,
-            cluster.client
-        )
-        futures, future_indices = submit_remaining_blocks()
-        completed_futures = as_completed(futures)
-        for future in completed_futures:
-            iii = future_indices[future.key]
-            written[iii] = True
-            running[iii] = False
-            locked = _get_locks(running, all_blocks_coords, output_blocks)
-            new_futures, new_future_indices = submit_remaining_blocks()
-            completed_futures.update(new_futures)
-            future_indices = {**future_indices, **new_future_indices}
-        result_transform = output_transform
-    else:
-        print('Submit alignment for', len(indices), 'bocks')
-        align_blocks_args = [_create_single_block_align_args_from_index(
-                block_info,
-                partition_dims,
-                overlaps,
-                fix_zarr, mov_zarr,
-                fix_spacing, mov_spacing,
-                fix_mask_zarr, mov_mask_zarr,
-                steps,
-                static_transform_list,
-                None, # output_transform
-            ) for block_info in indices]
-        futures = cluster.client.map(
-            _align_single_block,
-            align_blocks_args
-        )
+    print('Submit alignment for', len(indices), 'bocks')
+    align_blocks_args = [_create_single_block_align_args_from_index(
+        block_info,
+        partition_dims,
+        overlaps,
+        fix_zarr, mov_zarr,
+        fix_spacing, mov_spacing,
+        fix_mask_zarr, mov_mask_zarr,
+        steps,
+        static_transform_list,
+        output_transform,
+        write_group_interval
+    ) for block_info in indices]
+
+    print('Align', len(align_blocks_args), 'blocks')
+    futures = cluster.client.map(
+        _align_single_block,
+        *list(zip(*align_blocks_args)),  # transpose arguments
+        pure=False
+    )
+
+    if output_transform is None:
+        # create result transform
         future_keys = [f.key for f in futures]
         result_transform = np.zeros(fix.shape + (fix.ndim,), dtype=np.float32)
         for batch in as_completed(futures, with_results=True).batches():
@@ -547,4 +474,8 @@ def distributed_alignment_pipeline(
                 result_transform[result_block_info[1]] += result
                 print('Completed block: ', result_block_info[0], flush=True)
 
-    return result_transform
+        return result_transform
+    else:
+        _ = np.all(cluster.client.gather(futures))
+
+        return output_transform

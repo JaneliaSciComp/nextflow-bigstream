@@ -1000,7 +1000,7 @@ def alignment_pipeline(
     # loop over steps
     initial_transform_count = len(static_transform_list)
     for alignment, arguments in steps:
-        print('Run ', alignment, flush=True)
+        print('Run', alignment, arguments, flush=True)
         arguments = {**kwargs, **arguments}
         arguments['static_transform_list'] = static_transform_list
         static_transform_list.append(align[alignment](**arguments))
