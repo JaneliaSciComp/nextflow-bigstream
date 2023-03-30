@@ -200,6 +200,8 @@ def _align_single_block(block_index,
             weights = weights[crop]
 
         # apply weights
+        print('Apply weights for', block_index, block_coords,
+              'from', weights.shape, 'to', transform.shape)
         transform = transform * weights[..., None]
 
         # write the data
@@ -210,6 +212,7 @@ def _align_single_block(block_index,
             write_group = np.sum(np.array(block_index) % 3 * (9, 3, 1))
             while not (write_group < time.time() / write_group_interval % 27 < write_group + .5):
                 time.sleep(1)
+            print('Write results for block', block_index, 'at', block_coords)
             result_transform[block_coords] += transform
     except Exception as e:
         print('Balancing weights failed for', block_index, block_coords,
@@ -229,19 +232,19 @@ def _create_single_block_align_args_from_index(block_info,
                                                result_transform,
                                                write_group_interval):
     return [
-            block_info[0],  # block_index
-            block_info[1],  # ndim tuple of block slices
-            block_info[2],  # block neighbors
-            blocksize,
-            blockoverlaps,
-            fix_vol, mov_vol,
-            fix_spacing, mov_spacing,
-            fix_mask, mov_mask,
-            align_steps,
-            transforms_list,
-            result_transform,
-            write_group_interval,
-            ]
+        block_info[0],  # block_index
+        block_info[1],  # ndim tuple of block slices
+        block_info[2],  # block neighbors
+        blocksize,
+        blockoverlaps,
+        fix_vol, mov_vol,
+        fix_spacing, mov_spacing,
+        fix_mask, mov_mask,
+        align_steps,
+        transforms_list,
+        result_transform,
+        write_group_interval,
+    ]
 
 
 @cluster
