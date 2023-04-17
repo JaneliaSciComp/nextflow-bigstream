@@ -2,7 +2,7 @@ include {
     DASK_CLUSTER_TERMINATE
 } from '../external-modules/dask/modules/dask/cluster_terminate/main'
 
-workflow stop_cluster {
+workflow STOP_CLUSTER {
     take:
     work_dir
 

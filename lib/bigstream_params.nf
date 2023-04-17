@@ -3,33 +3,37 @@ def bigstream_params() {
         bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.0',
         dask_config: '',
         // global alignment (low res) parameters
-        fixed_lowres_path: '',
-        fixed_lowres_subpath: 'lowres',
-        moving_lowres_path: '',
-        moving_lowres_subpath: 'lowres',
+        global_fixed_path: '',
+        global_fixed_subpath: 'lowres',
+        global_moving_path: '',
+        global_moving_subpath: 'lowres',
         global_output_path: '',
         global_transform_name: 'affine.mat',
         global_aligned_name: '',
         use_existing_global_transform: false, // if global transform already exists use it
-        global_steps: '', // use 'ransac,affine' to run global alignment
+        global_steps: '', // use 'ransac,affine' to align the global volume
         global_ransac_blob_sizes: '6,20',
         global_shrink_factors: '2',
         global_smooth_sigmas: 2.5,
         global_learning_rate: 0.25,
         global_min_step: 0,
         global_iterations: 400,
+        // global volume computation resources
+        bigstream_global_cpus: 1,
+        bigstream_global_mem_gb: 2,
         // local alignment (high res) parameters
-        fixed_highres_path: '',
-        fixed_highres_subpath: 'highres',
-        moving_highres_path: '',
-        moving_highres_subpath: 'highres',
+        local_fixed_path: '',
+        local_fixed_subpath: 'highres',
+        local_moving_path: '',
+        local_moving_subpath: 'highres',
         local_output_path: '',
         local_working_path: '',
         local_transform_name: '',
         local_aligned_name: '',
-        local_steps: '', // use ransac,deform to run local alignment
-        partition_blocksize: 128, // processing blocksize for parallelization
-        output_blocksize: 128,  // output block (chunk) size
+        local_steps: '', // use ransac,deform to align the chunked volume
+        local_partitionsize: 128, // processing blocksize for parallelization
+        local_blocksize: 128,  // output block (chunk) size for zarr or N5 arrays
+        local_write_group_interval: 30,
         local_ransac_blob_sizes: '6,20',
         local_control_point_spacing: 50,
         control_point_levels: '1',
@@ -37,9 +41,8 @@ def bigstream_params() {
         local_learning_rate: 0.25,
         local_min_step: 0,
         local_iterations: 25,
-        bigstream_lowres_cpus: 1,
-        bigstream_lowres_mem_gb: 2,
-        bigstream_highres_cpus: 1,
-        bigstream_highres_mem_gb: 2,
+        // chunked volume computation resources
+        bigstream_local_cpus: 1,
+        bigstream_local_mem_gb: 2,
     ]
 }

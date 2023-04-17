@@ -377,7 +377,8 @@ def distributed_alignment_pipeline(
         prefix='.',
         dir=temporary_directory or os.getcwd(),
     )
-    print('Run distributed alignment using working dir:', temporary_directory)
+    print('Run distributed alignment using working dir:', temporary_directory,
+          flush=True)
     fix_zarr_path = temporary_directory.name + '/fix.zarr'
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
@@ -445,7 +446,7 @@ def distributed_alignment_pipeline(
     # establish all keyword arguments
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
-    print('Submit alignment for', len(indices), 'bocks')
+    print('Submit alignment for', len(indices), 'bocks', flush=True)
     align_blocks_args = [_create_single_block_align_args_from_index(
         block_info,
         partition_dims,
@@ -459,7 +460,7 @@ def distributed_alignment_pipeline(
         write_group_interval
     ) for block_info in indices]
 
-    print('Align', len(align_blocks_args), 'blocks')
+    print('Align', len(align_blocks_args), 'blocks', flush=True)
     futures = cluster.client.map(
         _align_single_block,
         *list(zip(*align_blocks_args)),  # transpose arguments

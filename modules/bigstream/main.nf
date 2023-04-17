@@ -7,12 +7,12 @@ include {
 process BIGSTREAM {
     container { params.bigstream_container }
     containerOptions { get_runtime_opts([
-        lowres_fixed_path,
-        lowres_moving_path,
-        highres_fixed_path,
-        highres_moving_path,
-        parentfile(lowres_output_path),
-        parentfile(highres_output_path),
+        global_fixed_path,
+        global_moving_path,
+        local_fixed_path,
+        local_moving_path,
+        parentfile(global_output_path),
+        parentfile(local_output_path),
         parentfile(params.local_working_path),
         parentfile(params.dask_config),
     ]) }
@@ -21,20 +21,20 @@ process BIGSTREAM {
     cpus { ncpus }
 
     input:
-    tuple val(lowres_fixed_path), val(lowres_fixed_subpath),
-          val(lowres_moving_path), val(lowres_moving_subpath),
-          val(lowres_steps), // global steps
-          val(lowres_output_path),
-          val(lowres_transform_name),
-          val(lowres_aligned_name),
-          val(highres_fixed_path), val(highres_fixed_subpath),
-          val(highres_moving_path), val(highres_moving_subpath),
-          val(highres_steps), // local steps
-          val(highres_output_path),
-          val(highres_transform_name),
-          val(highres_aligned_name)
+    tuple val(global_fixed_path), val(global_fixed_subpath),
+          val(global_moving_path), val(global_moving_subpath),
+          val(global_steps), // global steps
+          val(global_output_path),
+          val(global_transform_name),
+          val(global_aligned_name),
+          val(local_fixed_path), val(local_fixed_subpath),
+          val(local_moving_path), val(local_moving_subpath),
+          val(local_steps), // local steps
+          val(local_output_path),
+          val(local_transform_name),
+          val(local_aligned_name)
 
-    val(lowres_use_existing_transform)
+    val(global_use_existing_transform)
 
     val(ncpus)
 
@@ -44,69 +44,69 @@ process BIGSTREAM {
           val(cluster_workdir)
 
     output:
-    tuple val(lowres_fixed_path), val(lowres_fixed_subpath),
-          val(lowres_moving_path), val(lowres_moving_subpath),
-          val(lowres_output_path),
-          val(lowres_transform_name),
-          val(lowres_aligned_name),
-          val(highres_fixed_path), val(highres_fixed_subpath),
-          val(highres_moving_path), val(highres_moving_subpath),
-          val(highres_output_path),
-          val(highres_transform_name),
-          val(highres_aligned_name)
+    tuple val(global_fixed_path), val(global_fixed_subpath),
+          val(global_moving_path), val(global_moving_subpath),
+          val(global_output_path),
+          val(global_transform_name),
+          val(global_aligned_name),
+          val(local_fixed_path), val(local_fixed_subpath),
+          val(local_moving_path), val(local_moving_subpath),
+          val(local_output_path),
+          val(local_transform_name),
+          val(local_aligned_name)
     tuple val(cluster_scheduler),
           val(cluster_workdir)
 
     script:
-    def lowres_steps_arg = lowres_steps
-        ? "--global-registration-steps ${lowres_steps}"
+    def global_steps_arg = global_steps
+        ? "--global-registration-steps ${global_steps}"
         : ''
-    def lowres_fixed_args = lowres_fixed_path
-        ? "--fixed-lowres ${lowres_fixed_path} --fixed-lowres-subpath ${lowres_fixed_subpath}"
+    def global_fixed_args = global_fixed_path
+        ? "--fixed-lowres ${global_fixed_path} --fixed-lowres-subpath ${global_fixed_subpath}"
         : ''
-    def lowres_moving_args = lowres_moving_path
-        ? "--moving-lowres ${lowres_moving_path} --moving-lowres-subpath ${lowres_moving_subpath}"
+    def global_moving_args = global_moving_path
+        ? "--moving-lowres ${global_moving_path} --moving-lowres-subpath ${global_moving_subpath}"
         : ''
-    def lowres_output_arg = lowres_output_path
-        ? "--global-output-dir ${lowres_output_path}"
+    def global_output_arg = global_output_path
+        ? "--global-output-dir ${global_output_path}"
         : ''
-    def mk_lowres_output = lowres_output_path
-        ? "mkdir -p ${lowres_output_path}"
+    def mk_global_output = global_output_path
+        ? "mkdir -p ${global_output_path}"
         : ''
-    def lowres_transform_name = params.global_transform_name
+    def global_transform_name = params.global_transform_name
         ? "--global-transform-name ${params.global_transform_name}"
         : ''
-    def lowres_aligned_name = params.global_aligned_name
+    def global_aligned_name = params.global_aligned_name
         ? "--global-aligned-name ${params.global_aligned_name}"
         : ''
-    def highres_steps_arg = highres_steps
-        ? "--local-registration-steps ${highres_steps}"
+    def local_steps_arg = local_steps
+        ? "--local-registration-steps ${local_steps}"
         : ''
-    def highres_fixed_args = highres_fixed_path
-        ? "--fixed-highres ${highres_fixed_path} --fixed-highres-subpath ${highres_fixed_subpath}"
+    def local_fixed_args = local_fixed_path
+        ? "--fixed-highres ${local_fixed_path} --fixed-highres-subpath ${local_fixed_subpath}"
         : ''
-    def highres_moving_args = highres_moving_path
-        ? "--moving-highres ${highres_moving_path} --moving-highres-subpath ${highres_moving_subpath}"
+    def local_moving_args = local_moving_path
+        ? "--moving-highres ${local_moving_path} --moving-highres-subpath ${local_moving_subpath}"
         : ''
-    def highres_output_arg = highres_output_path
-        ? "--local-output-dir ${highres_output_path}"
+    def local_output_arg = local_output_path
+        ? "--local-output-dir ${local_output_path}"
         : ''
-    def mk_highres_output = highres_output_path
-        ? "mkdir -p ${highres_output_path}"
+    def mk_local_output = local_output_path
+        ? "mkdir -p ${local_output_path}"
         : ''
-    def highres_transform_name = params.local_transform_name
+    def local_transform_name = params.local_transform_name
         ? "--local-transform-name ${params.local_transform_name}"
         : ''
-    def highres_aligned_name = params.local_aligned_name
+    def local_aligned_name = params.local_aligned_name
         ? "--local-aligned-name ${params.local_aligned_name}"
         : ''
-    def use_existing_lowres_transform = lowres_use_existing_transform
+    def use_existing_global_transform = global_use_existing_transform
         ? '--use-existing-global-transform'
         : ''
-    def mk_highres_working_dir = params.local_working_path
+    def mk_local_working_dir = params.local_working_path
         ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
         : ''
-    def highres_working_dir = params.local_working_path
+    def local_working_dir = params.local_working_path
         ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
         : ''
     def scheduler_arg = cluster_scheduler
@@ -117,26 +117,26 @@ process BIGSTREAM {
         : ''
     """
     umask 0002
-    ${mk_lowres_output}
-    ${mk_highres_output}
-    ${mk_highres_working_dir}
+    ${mk_global_output}
+    ${mk_local_output}
+    ${mk_local_working_dir}
     python /app/bigstream/scripts/main_align_pipeline.py \
-        ${lowres_steps_arg} \
-        ${lowres_fixed_args} \
-        ${lowres_moving_args} \
-        ${lowres_output_arg} \
-        ${lowres_transform_name} \
-        ${lowres_aligned_name} \
-        ${use_existing_lowres_transform} \
-        ${highres_steps_arg} \
-        ${highres_fixed_args} \
-        ${highres_moving_args} \
-        ${highres_output_arg} \
-        ${highres_transform_name} \
-        ${highres_aligned_name} \
-        ${highres_working_dir} \
-        --partition-blocksize ${params.partition_blocksize} \
-        --output-chunk-size ${params.output_blocksize} \
+        ${global_steps_arg} \
+        ${global_fixed_args} \
+        ${global_moving_args} \
+        ${global_output_arg} \
+        ${global_transform_name} \
+        ${global_aligned_name} \
+        ${use_existing_global_transform} \
+        ${local_steps_arg} \
+        ${local_fixed_args} \
+        ${local_moving_args} \
+        ${local_output_arg} \
+        ${local_transform_name} \
+        ${local_aligned_name} \
+        ${local_working_dir} \
+        --partition-blocksize ${params.local_partitionsize} \
+        --output-chunk-size ${params.local_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
         --global-smooth-sigmas ${params.global_smooth_sigmas} \
         --global-learning-rate ${params.global_learning_rate} \
@@ -144,6 +144,7 @@ process BIGSTREAM {
         --local-smooth-sigmas ${params.local_smooth_sigmas} \
         --local-learning-rate ${params.local_learning_rate} \
         --local-iterations ${params.local_iterations} \
+        --local-write-group-interval ${params.local_write_group_interval} \
         ${scheduler_arg} \
         ${dask_config_arg}
     """

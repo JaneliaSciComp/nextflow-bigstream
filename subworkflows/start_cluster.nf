@@ -10,7 +10,7 @@ include {
     PREPARE_DIRS;
 } from '../modules/local/prepare_dirs'
 
-workflow start_cluster {
+workflow START_CLUSTER {
     take:
     cluster_accessible_paths
 
