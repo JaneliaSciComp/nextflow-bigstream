@@ -42,7 +42,7 @@ process GLOBAL_TRANSFORM {
     mkdir -p ${parent_output}
     python /app/bigstream/scripts/main_apply_global_transform.py \
         --fixed ${fixed_path} --fixed-subpath ${fixed_subpath} \
-        --moving ${moving_path} --moving-subpath ${moving_subpath)} \
+        --moving ${moving_path} --moving-subpath ${moving_subpath} \
         --output ${output_path} ${output_subpath_arg} \
         ${transforms_arg} \
         --output-chunk-size ${params.output_blocksize}

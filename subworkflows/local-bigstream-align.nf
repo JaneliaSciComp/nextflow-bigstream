@@ -53,5 +53,6 @@ workflow LOCAL_BIGSTREAM_ALIGN {
                                       cluster_info)
 
     emit:
-    done = bigstream_results[0]
+    bigstream_results[0]
+    bigstream_results[1]
 }

@@ -13,8 +13,7 @@ process LOCAL_TRANSFORM {
         parentfile(global_transform),
         parentfile(local_transform),
         parentfile(params.local_working_path),
-        parentfile(params.dask_config),
-    ]) }
+        parentfile(params.dask_config)]) }
 
     memory { "${mem_gb} GB" }
     cpus { ncpus }
@@ -25,10 +24,10 @@ process LOCAL_TRANSFORM {
           val(output_path), val(output_subpath),
           val(global_transform),
           val(local_transform_path), val(local_transform_subpath)
-    val(ncpus)
-    val(mem_gb)
     tuple val(cluster_scheduler),
           val(cluster_workdir)
+    val(ncpus)
+    val(mem_gb)
 
     output:
     tuple val(fixed_path), val(fixed_subpath),
@@ -70,7 +69,7 @@ process LOCAL_TRANSFORM {
     ${mk_working_dir}
     python /app/bigstream/scripts/main_apply_local_transform.py \
         --fixed ${fixed_path} --fixed-subpath ${fixed_subpath} \
-        --moving ${moving_path} --moving-subpath ${moving_subpath)} \
+        --moving ${moving_path} --moving-subpath ${moving_subpath} \
         --output ${output_path} ${output_subpath_arg} \
         ${global_transforms_arg} \
         ${local_transform_arg} ${local_transform_subpath_arg} \
@@ -79,5 +78,6 @@ process LOCAL_TRANSFORM {
         --partition-blocksize ${params.partition_blocksize} \
         ${scheduler_arg} \
         ${dask_config_arg}
+
     """
 }

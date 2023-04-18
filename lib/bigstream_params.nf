@@ -44,5 +44,7 @@ def bigstream_params() {
         // chunked volume computation resources
         bigstream_local_cpus: 1,
         bigstream_local_mem_gb: 2,
+        deform_local_cpus: 1,
+        deform_local_mem_gb: 1,
     ]
 }

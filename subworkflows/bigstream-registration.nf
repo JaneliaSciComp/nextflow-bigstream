@@ -15,6 +15,10 @@ include {
 } from './stop_cluster'
 
 include {
+    LOCAL_TRANSFORM
+} from '../modules/local/local_transform'
+
+include {
     normalized_file_name;
 } from '../lib/utils'
 
@@ -188,10 +192,26 @@ workflow BIGSTREAM_REGISTRATION {
 
     def local_alignment_results = LOCAL_BIGSTREAM_ALIGN(local_inputs, cluster_info)
 
-    local_alignment_results.subscribe {
+    local_alignment_results[0].subscribe {
         log.debug "Completed local alignment for: $it"
     }
 
+    def local_deform_inputs = normalized_inputs
+    | join(local_alignment_results[0], by:[0]) // !!!! FIXME
+    | map {
+        // FIXME !!!!!!
+        it
+    }
+
+    // apply local deformation
+    def local_deform_results = LOCAL_TRANSFORM(local_deform_inputs, 
+                                               local_alignment_results[1],
+                                               params.deform_local_cpus,
+                                               params.deform_local_mem_gb)
+
+    // done with the cluster
+    STOP_CLUSTER(local_deform_results[1].map { it[1] })
+
     emit:
-    done = local_alignment_results
+    done = local_deform_results[0]
 }

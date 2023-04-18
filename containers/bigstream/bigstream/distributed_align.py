@@ -480,6 +480,10 @@ def distributed_alignment_pipeline(
 
         return result_transform
     else:
-        _ = np.all(cluster.client.gather(futures))
+        for batch in as_completed(futures, with_results=True).batches():
+            for future, result in batch:
+                iii = future_keys.index(future.key)
+                result_block_info = indices[iii]
+                print('Returned result for block: ', result_block_info[0], flush=True)
 
         return output_transform
