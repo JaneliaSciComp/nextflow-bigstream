@@ -74,8 +74,8 @@ process LOCAL_TRANSFORM {
         ${global_transforms_arg} \
         ${local_transform_arg} ${local_transform_subpath_arg} \
         ${working_dir_arg} \
-        --output-chunk-size ${params.output_blocksize} \
-        --partition-blocksize ${params.partition_blocksize} \
+        --output-chunk-size ${params.local_blocksize} \
+        --partition-blocksize ${params.local_partitionsize} \
         ${scheduler_arg} \
         ${dask_config_arg}
 

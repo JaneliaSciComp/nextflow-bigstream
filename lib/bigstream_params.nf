@@ -12,6 +12,7 @@ def bigstream_params() {
         global_aligned_name: '',
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
+        global_blocksize: 128, // output block size for global volume
         global_ransac_blob_sizes: '6,20',
         global_shrink_factors: '2',
         global_smooth_sigmas: 2.5,
