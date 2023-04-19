@@ -17,7 +17,7 @@ workflow START_CLUSTER {
     main:
     def accessible_paths = PREPARE_DIRS(cluster_accessible_paths)
 
-    if (params.with_dask_cluster && params.local_steps) {
+    if (params.with_dask_cluster) {
         cluster = CREATE_DASK_CLUSTER(
             file(params.work_dir),
             accessible_paths
