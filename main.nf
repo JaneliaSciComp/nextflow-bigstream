@@ -33,7 +33,9 @@ workflow {
                         final_params.local_transform_name,
                         final_params.local_aligned_name,
                     ]),
-                Channel.of([]),
+                Channel.of([
+                    [ final_params.local_moving_path, final_params.local_moving_subpath, "testwarp" ]
+                ]),
               )
     res | view
 }
