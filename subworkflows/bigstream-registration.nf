@@ -231,8 +231,10 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     def local_alignment_results = LOCAL_BIGSTREAM_ALIGN(local_inputs, cluster_info)
+    def local_alignment_results_with_cluster_info = local_alignment_results[0]
+    | merge(local_alignment_results[1])
 
-    local_alignment_results[0].subscribe {
+    local_alignment_results_with_cluster_info.subscribe {
         log.debug "Completed local alignment for: $it"
     }
 
@@ -262,7 +264,7 @@ workflow BIGSTREAM_REGISTRATION {
              deform_inputs
         ]
     }
-    | join(local_alignment_results[0], by:[0,1,2,3,4,5,6])
+    | join(local_alignment_results_with_cluster_info, by:[0,1,2,3,4,5,6])
     | flatMap {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
@@ -271,7 +273,9 @@ workflow BIGSTREAM_REGISTRATION {
              local_aligned_name,
              global_output,
              global_transform_name,
-             deform_inputs) = it
+             deform_inputs,
+             cluster_scheduler,
+             cluster_workdir) = it
 
         log.debug "Build deform inputs from: $it"
 
@@ -284,19 +288,26 @@ workflow BIGSTREAM_REGISTRATION {
                 "${global_output}/${global_transform_name}",
                 "${local_output}/${local_transform_name}", ''/* empty_local_transform_subpath */,
             ]
-            log.debug "Local transform inputs: $r"
-            r
+            def cluster_info = [cluster_scheduler, cluster_workdir]
+            log.debug "Local transform inputs: $r, $cluster_info"
+            [r, cluster_info]
         }
     }
 
     // apply local deformation
-    def local_deform_results = LOCAL_TRANSFORM(local_deform_inputs, 
-                                               local_alignment_results[1],
+    def local_deform_results = LOCAL_TRANSFORM(local_deform_inputs.map { it[0] }, 
+                                               local_deform_inputs.map { it[1] },
                                                params.deform_local_cpus,
                                                params.deform_local_mem_gb)
 
     // done with the cluster
-    STOP_CLUSTER(local_deform_results[1].map { it[1] })
+    local_deform_results[1]
+    | groupTuple(by: [0,1]) // group all processes that run on the same cluster
+    | map {
+        def (cluster_scheduler, cluster_workdir) = it
+        cluster_workdir
+    }
+    | STOP_CLUSTER
 
     emit:
     done = local_deform_results[0]
