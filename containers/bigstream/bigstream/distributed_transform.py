@@ -2,7 +2,6 @@ import dask.array as da
 import numpy as np
 import os
 import tempfile
-import traceback
 import zarr
 
 import bigstream.transform as cs_transform
@@ -58,6 +57,8 @@ def distributed_apply_transform(
         The list of transforms to apply. These may be 2d arrays of shape 4x4
         (affine transforms), or ndarrays of `fix.ndim` + 1 dimensions (deformations).
         Zarr arrays work just fine.
+        If they are ndarrays there's no need to save these as temporary zarr since they
+        already come either from a zarr or N5 container
 
     overlap_factor : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
@@ -105,23 +106,6 @@ def distributed_apply_transform(
     fix_zarr = ut.numpy_to_zarr(fix, output_chunk_size, fix_zarr_path)
     mov_zarr = ut.numpy_to_zarr(mov, output_chunk_size, mov_zarr_path)
 
-    # ensure all transforms are zarr
-    zarr_transform_list = []
-    zarr_transform_blocks = output_chunk_size + (fix_zarr.ndim,)
-    for iii, transform in enumerate(transform_list):
-        try:
-            if transform.shape != (4, 4):
-                zarr_path = temporary_directory.name + f'/deform{iii}.zarr'
-                print('Prepare zarr array for transformation', iii, zarr_path)
-                transform = ut.numpy_to_zarr(transform, 
-                                             zarr_transform_blocks,
-                                             zarr_path)
-            zarr_transform_list.append(transform)
-        except Exception as e:
-            print('Error preparing transformation', iii, e)
-            traceback.print_exc(e)
-            return
-
     # get overlap and number of blocks
     partition_dims = np.array((partition_size,)*fix_zarr.ndim)
     nblocks = np.ceil(np.array(fix_zarr.shape) / partition_dims).astype(int)
@@ -132,11 +116,11 @@ def distributed_apply_transform(
     if transform_spacing is None:
         # create transform spacing using same value as fixed image
         transform_spacing_list = ((np.array(fix_spacing),) * 
-            len(zarr_transform_list))
+            len(transform_list))
     elif not isinstance(transform_spacing, tuple):
         # create a corresponding transform spacing for each transform
         transform_spacing_list = ((transform_spacing,) *
-            len(zarr_transform_list))
+            len(transform_list))
     else:
         # transform spacing is a tuple
         # assume it's length matches transform list length
@@ -163,7 +147,7 @@ def distributed_apply_transform(
         mov_spacing=mov_spacing,
         blocksize=partition_dims,
         blockoverlaps=overlaps,
-        transform_list=zarr_transform_list,
+        transform_list=transform_list,
         transform_spacing_list=transform_spacing_list,
         dtype=fix_zarr.dtype,
         chunks=output_chunk_size,

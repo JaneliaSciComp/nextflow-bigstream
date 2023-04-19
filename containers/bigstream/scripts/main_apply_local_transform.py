@@ -105,6 +105,7 @@ def _run_apply_transform(args):
     else:
         cluster = local_cluster(config=dask_config)
 
+    # read local deform, but ignore attributes as they are not needed
     local_deform, _ = n5_utils.open(args.local_transform,
                                     args.local_transform_subpath)
 
