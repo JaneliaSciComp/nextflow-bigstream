@@ -35,7 +35,8 @@ workflow {
                     ]),
                 Channel.of(
                     [
-                        [ final_params.local_moving_path, final_params.local_moving_subpath, "testwarp" ],
+                        [ final_params.local_moving_path, final_params.local_moving_subpath, "testwarp1" ],
+                        [ final_params.local_moving_path, final_params.local_moving_subpath, "testwarp2" ],
                     ],
                 ),
               )
