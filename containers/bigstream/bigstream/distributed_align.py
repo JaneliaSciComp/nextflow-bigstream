@@ -466,10 +466,10 @@ def distributed_alignment_pipeline(
         *list(zip(*align_blocks_args)),  # transpose arguments
         pure=False
     )
+    future_keys = [f.key for f in futures]
 
     if output_transform is None:
         # create result transform
-        future_keys = [f.key for f in futures]
         result_transform = np.zeros(fix.shape + (fix.ndim,), dtype=np.float32)
         for batch in as_completed(futures, with_results=True).batches():
             for future, result in batch:
