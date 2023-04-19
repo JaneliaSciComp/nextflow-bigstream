@@ -100,7 +100,6 @@ workflow BIGSTREAM_REGISTRATION {
         if (deform_inputs != null) {
             normalized_deform_inputs = deform_inputs.collect { vol_inputs ->
                 def (vol_path, vol_subpath, vol_output) = vol_inputs
-                log.debug "Normalize deform inputs: $vol_inputs"
                 if (vol_subpath == null) {
                     vol_subpath = ''
                 }
@@ -110,11 +109,13 @@ workflow BIGSTREAM_REGISTRATION {
                 } else {
                     normalized_vol_output = normalized_file_name(vol_output)
                 }
-                [
+                def r = [
                     normalized_file_name(vol_path),
                     vol_subpath,
                     normalized_vol_output
                 ]
+                log.debug "Normalize deform inputs: $vol_inputs -> $r"
+                r
             }
         } else normalized_deform_inputs = []
 
