@@ -40,10 +40,14 @@ workflow BIGSTREAM_REGISTRATION {
 
     main:
 
-    def normalized_inputs = registration_input
-    | merge(deform_input) // the registration and the deform input are expected to be in sync at this point
+    def indexed_registration_input = index_channel(registration_input)
+    def indexed_deform_input = index_channel(deform_input)
+
+    def normalized_inputs = indexed_registration_input
+    | join(indexed_deform_input, by:0) // the registration and the deform input are expected to be in sync at this point
     | map {
-        def (global_fixed, global_fixed_dataset,
+        def (index,
+             global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
              global_steps,
              global_output,
@@ -56,12 +60,15 @@ workflow BIGSTREAM_REGISTRATION {
              local_transform_name,
              local_aligned_name,
              deform_inputs) = it
+        log.debug "Normalize: $it"
+
         def normalized_local_output = normalized_file_name(local_output)
 
         def normalized_deform_inputs
         if (deform_inputs != null) {
             normalized_deform_inputs = deform_inputs.collect { vol_inputs ->
                 def (vol_path, vol_subpath, vol_output) = vol_inputs
+                log.debug "Normalize deform inputs: $vol_inputs"
                 if (vol_subpath == null) {
                     vol_subpath = ''
                 }
@@ -232,6 +239,8 @@ workflow BIGSTREAM_REGISTRATION {
              global_output,
              global_transform_name,
              deform_inputs) = it
+
+        log.debug "Build deform inputs from: $it"
 
         deform_inputs.collect { vol_inputs ->
             def (vol_path, vol_subpath, vol_output) = vol_inputs
