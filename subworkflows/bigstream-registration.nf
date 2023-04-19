@@ -196,9 +196,11 @@ workflow BIGSTREAM_REGISTRATION {
     | START_CLUSTER
     | map {
         def (cluster_id, cluster_scheduler, cluster_workdir, connected_workers) = it
-        [
+        def current_cluster_info = [
             cluster_scheduler, cluster_workdir,
         ]
+        log.debug "Current cluster: $it -> ${current_cluster_info}"
+        current_cluster_info
     }
 
     def local_inputs = normalized_inputs
