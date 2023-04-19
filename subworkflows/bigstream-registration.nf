@@ -20,6 +20,7 @@ include {
 
 include {
     normalized_file_name;
+    index_channel
 } from '../lib/utils'
 
 workflow BIGSTREAM_REGISTRATION {
