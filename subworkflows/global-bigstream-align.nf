@@ -77,5 +77,5 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
     }
 
     emit:
-    done = global_alignment_results
+    results = global_alignment_results
 }

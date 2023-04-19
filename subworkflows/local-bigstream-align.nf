@@ -76,6 +76,6 @@ workflow LOCAL_BIGSTREAM_ALIGN {
     }
 
     emit:
-    local_alignment_results
+    results = local_alignment_results
     bigstream_results[1]
 }
