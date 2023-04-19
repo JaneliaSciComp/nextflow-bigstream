@@ -105,7 +105,7 @@ def _run_apply_transform(args):
     else:
         cluster = local_cluster(config=dask_config)
 
-    local_deform = n5_utils.open(args.local_trasform, 
+    local_deform = n5_utils.open(args.local_transform, 
                                  args.local_transform_subpath)
 
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
