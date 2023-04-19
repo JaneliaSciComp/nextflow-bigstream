@@ -281,7 +281,7 @@ workflow BIGSTREAM_REGISTRATION {
                 vol_path, vol_subpath,
                 vol_output, vol_subpath,
                 "${global_output}/${global_transform_name}",
-                local_output, local_transform_name,
+                "${local_output}/${local_transform_name}", ''/* empty_local_transform_subpath */,
             ]
             log.debug "Local transform inputs: $r"
             r
