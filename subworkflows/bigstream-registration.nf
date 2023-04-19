@@ -195,9 +195,9 @@ workflow BIGSTREAM_REGISTRATION {
     }
     | START_CLUSTER
     | map {
-        def (cluster_id, cluster_scheduler_ip, cluster_work_dir, connected_workers) = it
+        def (cluster_id, cluster_scheduler, cluster_workdir, connected_workers) = it
         [
-            cluster_scheduler_ip, cluster_work_dir,
+            cluster_scheduler, cluster_workdir,
         ]
     }
 
@@ -288,9 +288,9 @@ workflow BIGSTREAM_REGISTRATION {
                 "${global_output}/${global_transform_name}",
                 "${local_output}/${local_transform_name}", ''/* empty_local_transform_subpath */,
             ]
-            def cluster_info = [cluster_scheduler, cluster_workdir]
-            log.debug "Local transform inputs: $r, $cluster_info"
-            [r, cluster_info]
+            def current_cluster_info = [cluster_scheduler, cluster_workdir]
+            log.debug "Local transform inputs: $r, $current_cluster_info"
+            [r, current_cluster_info]
         }
     }
 
