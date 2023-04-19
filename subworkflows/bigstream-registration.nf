@@ -300,6 +300,8 @@ workflow BIGSTREAM_REGISTRATION {
                                                params.deform_local_cpus,
                                                params.deform_local_mem_gb)
 
+    local_deform_results.subscribe { log.debug "Completed deform transformation: $it" }
+
     // done with the cluster
     local_deform_results
     | groupTuple(by: [6,7]) // group all processes that run on the same cluster
