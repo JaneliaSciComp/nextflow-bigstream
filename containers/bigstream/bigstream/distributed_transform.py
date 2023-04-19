@@ -1,6 +1,8 @@
 import dask.array as da
 import numpy as np
-import os, tempfile
+import os
+import tempfile
+import traceback
 import zarr
 
 import bigstream.transform as cs_transform
@@ -107,12 +109,18 @@ def distributed_apply_transform(
     zarr_transform_list = []
     zarr_transform_blocks = output_chunk_size + (fix_zarr.ndim,)
     for iii, transform in enumerate(transform_list):
-        if transform.shape != (4, 4):
-            zarr_path = temporary_directory.name + f'/deform{iii}.zarr'
-            transform = ut.numpy_to_zarr(transform, 
-                                         zarr_transform_blocks,
-                                         zarr_path)
-        zarr_transform_list.append(transform)
+        try:
+            if transform.shape != (4, 4):
+                zarr_path = temporary_directory.name + f'/deform{iii}.zarr'
+                print('Prepare zarr array for transformation', iii, zarr_path)
+                transform = ut.numpy_to_zarr(transform, 
+                                             zarr_transform_blocks,
+                                             zarr_path)
+            zarr_transform_list.append(transform)
+        except Exception as e:
+            print('Error preparing transformation', iii, e)
+            traceback.print_exc(e)
+            return
 
     # get overlap and number of blocks
     partition_dims = np.array((partition_size,)*fix_zarr.ndim)

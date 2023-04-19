@@ -105,8 +105,8 @@ def _run_apply_transform(args):
     else:
         cluster = local_cluster(config=dask_config)
 
-    local_deform = n5_utils.open(args.local_transform, 
-                                 args.local_transform_subpath)
+    local_deform, _ = n5_utils.open(args.local_transform,
+                                    args.local_transform_subpath)
 
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
 
@@ -120,17 +120,17 @@ def _run_apply_transform(args):
         )
 
         if args.global_transformations:
-            transforms_list = [np.loadtxt(tfile) 
-                               for tfile in args.global_transformations]
+            global_transforms_list = [np.loadtxt(tfile)
+                                      for tfile in args.global_transformations]
         else:
-            transforms_list = []            
+            global_transforms_list = []
 
         output = distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
             args.partition_blocksize,
             output_blocks,
-            transform_list=transforms_list + [local_deform],
+            transform_list=global_transforms_list + [local_deform],
             aligned_dataset=output_dataset,
             cluster=cluster,
             temporary_directory=args.working_dir,
