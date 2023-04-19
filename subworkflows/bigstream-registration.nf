@@ -197,10 +197,54 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     def local_deform_inputs = normalized_inputs
-    | join(local_alignment_results[0], by:[0]) // !!!! FIXME
     | map {
-        // FIXME !!!!!!
-        it
+        def (global_fixed, global_fixed_dataset,
+             global_moving, global_moving_dataset,
+             global_steps,
+             global_output,
+             global_transform_name,
+             global_aligned_name,
+             local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_steps,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             deform_inputs) = it
+        [
+             local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             global_output,
+             global_transform_name,
+             deform_inputs
+        ]
+    }
+    | join(local_alignment_results[0], by:[0,1,2,3,4,6])
+    | flatMap {
+        def (local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             global_output,
+             global_transform_name,
+             deform_inputs) = it
+
+        deform_inputs.collect { vol_inputs ->
+            def (vol_path, vol_subpath, vol_output) = vol_inputs
+            def r = [
+                local_fixed, local_fixed_dataset,
+                vol_path, vol_subpath,
+                vol_output, vol_subpath,
+                "${global_output}/${global_transform_name}",
+                local_output, local_transform_name,
+            ]
+            log.debug "Local transform inputs: $r"
+            r
+        }
     }
 
     // apply local deformation
