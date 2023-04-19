@@ -53,9 +53,8 @@ process BIGSTREAM {
           val(local_moving_path), val(local_moving_subpath),
           val(local_output_path),
           val(local_transform_name),
-          val(local_aligned_name)
-    tuple val(cluster_scheduler),
-          val(cluster_workdir)
+          val(local_aligned_name),
+          val(cluster_scheduler), val(cluster_workdir)
 
     script:
     def global_steps_arg = global_steps

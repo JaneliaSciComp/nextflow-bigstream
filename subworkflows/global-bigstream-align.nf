@@ -55,7 +55,7 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
                                          '', // cluster_work_dir
                                       ])
 
-    def global_alignment_results = bigstream_results[0]
+    def global_alignment_results = bigstream_results
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
@@ -77,5 +77,5 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
     }
 
     emit:
-    results = global_alignment_results
+    done = global_alignment_results
 }

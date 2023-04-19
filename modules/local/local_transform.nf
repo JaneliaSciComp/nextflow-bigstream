@@ -32,9 +32,8 @@ process LOCAL_TRANSFORM {
     output:
     tuple val(fixed_path), val(fixed_subpath),
           val(moving_path), val(moving_subpath),
-          val(output_path), val(output_subpath)
-    tuple val(cluster_scheduler),
-          val(cluster_workdir)
+          val(output_path), val(output_subpath),
+          val(cluster_scheduler), val(cluster_workdir)
 
     script:
     def parent_output = file(output_path).parent

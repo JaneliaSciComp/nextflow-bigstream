@@ -52,7 +52,7 @@ workflow LOCAL_BIGSTREAM_ALIGN {
                                       params.bigstream_local_mem_gb,
                                       cluster_info)
 
-    def local_alignment_results = bigstream_results[0]
+    def local_alignment_results = bigstream_results
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
@@ -63,7 +63,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
              local_moving, local_moving_dataset,
              local_output,
              local_transform_name,
-             local_aligned_name) = it
+             local_aligned_name,
+             cluster_scheduler,
+             cluster_workdir) = it
         [
             local_fixed, local_fixed_dataset,
             local_moving, local_moving_dataset,
@@ -72,10 +74,11 @@ workflow LOCAL_BIGSTREAM_ALIGN {
             local_aligned_name,
             global_output,
             global_transform_name,
+            cluster_scheduler,
+            cluster_workdir
         ]
     }
 
     emit:
-    results = local_alignment_results
-    bigstream_results[1]
+    done = local_alignment_results
 }

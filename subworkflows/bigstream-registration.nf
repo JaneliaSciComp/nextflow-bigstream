@@ -231,10 +231,8 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     def local_alignment_results = LOCAL_BIGSTREAM_ALIGN(local_inputs, cluster_info)
-    def local_alignment_results_with_cluster_info = local_alignment_results[0]
-    | merge(local_alignment_results[1])
 
-    local_alignment_results_with_cluster_info.subscribe {
+    local_alignment_results.subscribe {
         log.debug "Completed local alignment for: $it"
     }
 
@@ -264,7 +262,7 @@ workflow BIGSTREAM_REGISTRATION {
              deform_inputs
         ]
     }
-    | join(local_alignment_results_with_cluster_info, by:[0,1,2,3,4,5,6])
+    | join(local_alignment_results, by:[0,1,2,3,4,5,6,7,8])
     | flatMap {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
@@ -301,8 +299,8 @@ workflow BIGSTREAM_REGISTRATION {
                                                params.deform_local_mem_gb)
 
     // done with the cluster
-    local_deform_results[1]
-    | groupTuple(by: [0,1]) // group all processes that run on the same cluster
+    local_deform_results
+    | groupTuple(by: [6,7]) // group all processes that run on the same cluster
     | map {
         def (cluster_scheduler, cluster_workdir) = it
         cluster_workdir
@@ -310,5 +308,5 @@ workflow BIGSTREAM_REGISTRATION {
     | STOP_CLUSTER
 
     emit:
-    done = local_deform_results[0]
+    done = local_deform_results
 }
