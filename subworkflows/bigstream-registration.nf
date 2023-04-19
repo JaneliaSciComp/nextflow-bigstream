@@ -42,6 +42,36 @@ workflow BIGSTREAM_REGISTRATION {
     main:
 
     def indexed_registration_input = index_channel(registration_input)
+    | map {
+        def (index, ri) = it
+        def (global_fixed, global_fixed_dataset,
+             global_moving, global_moving_dataset,
+             global_steps,
+             global_output,
+             global_transform_name,
+             global_aligned_name,
+             local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_steps,
+             local_output,
+             local_transform_name,
+             local_aligned_name) = ri
+        [
+            index,
+            global_fixed, global_fixed_dataset,
+            global_moving, global_moving_dataset,
+            global_steps,
+            global_output,
+            global_transform_name,
+            global_aligned_name,
+            local_fixed, local_fixed_dataset,
+            local_moving, local_moving_dataset,
+            local_steps,
+            local_output,
+            local_transform_name,
+            local_aligned_name,
+        ]
+    }
     def indexed_deform_input = index_channel(deform_input)
 
     def normalized_inputs = indexed_registration_input
@@ -61,6 +91,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_transform_name,
              local_aligned_name,
              deform_inputs) = it
+
         log.debug "Normalize: $it"
 
         def normalized_local_output = normalized_file_name(local_output)
@@ -230,7 +261,7 @@ workflow BIGSTREAM_REGISTRATION {
              deform_inputs
         ]
     }
-    | join(local_alignment_results[0], by:[0,1,2,3,4,6])
+    | join(local_alignment_results[0], by:[0,1,2,3,4,5,6])
     | flatMap {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
