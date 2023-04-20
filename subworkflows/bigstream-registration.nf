@@ -321,7 +321,7 @@ workflow BIGSTREAM_REGISTRATION {
             deformed_results.transpose(),
             cluster_scheduler, cluster_workdir,
         ]
-        log.debug "Prepare to gather final results $it -> $r"
+        log.debug "Prepare to gather final results $it -> $r (${r[4]})"
     }
     
     STOP_CLUSTER(deform_results_by_cluster.map { it[4] })
