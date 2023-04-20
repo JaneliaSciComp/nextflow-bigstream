@@ -29,9 +29,20 @@ def normalized_file_name(f) {
     }
 }
 
-def parentfile(f) {
+def parentfile(f, uplevels) {
     if (f) {
-        file(f).parent
+        def ff = file(f)
+        def parent = ff
+        def nlevels = uplevels
+        while (nlevels-- > 0) {
+            def p = parent.parent;
+            if (!p)
+                return parent
+            else
+                parent = p
+        
+        }
+        return parent        
     } else {
         null
     }

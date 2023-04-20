@@ -37,17 +37,17 @@ process PREPARE_DIRS {
 def combine_dirs(inputdirs, outputdirs) {
     def alldirs = [] as Set
     def inputs = inputdirs.each {
-        def pf = parentfile(it)
+        def pf = parentfile(it, 2)
         alldirs = alldirs + [pf]
     }
     def outputs = outputdirs
                     .findAll {
-                        def pf = parentfile(it)
+                        def pf = parentfile(it, 2)
                         def existing = alldirs.find { isparentfile(it, pf) }
                         return existing == null
                     }
                     .each {
-                        def pf = parentfile(it)
+                        def pf = parentfile(it, 2)
                         alldirs = alldirs + [pf]
                     }
     log.debug "Combined dirs: $alldirs"

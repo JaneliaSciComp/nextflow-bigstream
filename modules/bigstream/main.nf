@@ -11,10 +11,10 @@ process BIGSTREAM {
         global_moving_path,
         local_fixed_path,
         local_moving_path,
-        parentfile(global_output_path),
-        parentfile(local_output_path),
-        parentfile(params.local_working_path),
-        parentfile(params.dask_config),
+        parentfile(global_output_path, 1),
+        parentfile(local_output_path, 1),
+        parentfile(params.local_working_path, 1),
+        parentfile(params.dask_config, 1),
     ]) }
 
     memory { "${mem_gb} GB" }

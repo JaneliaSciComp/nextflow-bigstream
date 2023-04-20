@@ -9,11 +9,11 @@ process LOCAL_TRANSFORM {
     containerOptions { get_runtime_opts([
         fixed_path,
         moving_path,
-        parentfile(output_path),
-        parentfile(global_transform),
-        parentfile(local_transform),
-        parentfile(params.local_working_path),
-        parentfile(params.dask_config)]) }
+        parentfile(output_path, 1),
+        parentfile(global_transform, 1),
+        parentfile(local_transform, 1),
+        parentfile(params.local_working_path, 1),
+        parentfile(params.dask_config, 1)]) }
 
     memory { "${mem_gb} GB" }
     cpus { ncpus }

@@ -9,8 +9,8 @@ process GLOBAL_TRANSFORM {
     containerOptions { get_runtime_opts([
         fixed_path,
         moving_path,
-        parentfile(output_path),
-        parentfile(global_transform)
+        parentfile(output_path, 1),
+        parentfile(global_transform, 1)
     ]) }
 
     memory { "${mem_gb} GB" }
