@@ -322,6 +322,7 @@ workflow BIGSTREAM_REGISTRATION {
             cluster_scheduler, cluster_workdir,
         ]
         log.debug "Prepare to gather final results $it -> $r (${r[4]})"
+        r
     }
     
     STOP_CLUSTER(deform_results_by_cluster.map { it[4] })
