@@ -307,6 +307,7 @@ workflow BIGSTREAM_REGISTRATION {
     | groupTuple(by: [6,7]) // group all processes that run on the same cluster
     | map {
         def (cluster_scheduler, cluster_workdir) = it
+        log.debug "Prepare to stop cluster $it -> cluster_workdir"
         cluster_workdir
     }
     | STOP_CLUSTER
