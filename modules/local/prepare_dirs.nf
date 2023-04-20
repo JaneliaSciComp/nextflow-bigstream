@@ -50,5 +50,6 @@ def combine_dirs(inputdirs, outputdirs) {
                         def pf = parentfile(it)
                         alldirs = alldirs + [pf]
                     }
+    log.debug "Combined dirs: $alldirs"
     alldirs
 }
