@@ -303,25 +303,18 @@ workflow BIGSTREAM_REGISTRATION {
     local_deform_results.subscribe { log.debug "Completed deform transformation: $it" }
 
     // done with the cluster
-    def final_deform_results = local_deform_results
+    local_deform_results
     | groupTuple(by: [6,7]) // group all processes that run on the same cluster
     | map {
         def (fixed_path, fixed_subpath,
              moving_path, moving_subpath,
              output_path, output_subpath,
              cluster_scheduler, cluster_workdir) = it
-        log.debug "Prepare to stop cluster $it"
-        [
-            cluster_workdir, 
-            cluster_scheduler,
-            fixed_path, fixed_subpath,
-            moving_path, moving_subpath,
-            output_path, output_subpath,
-        ]
+        log.debug "Prepare to stop cluster $it -> $cluster_workdir"
+        cluster_workdir
     }
-
-    def kill_cluster_result = STOP_CLUSTER(final_deform_results.map { it[0] })
+    | STOP_CLUSTER
 
     emit:
-    done = kill_cluster_result
+    done = local_deform_results
 }
