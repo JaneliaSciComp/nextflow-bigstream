@@ -312,20 +312,80 @@ workflow BIGSTREAM_REGISTRATION {
              moving_path, moving_subpath,
              output_path, output_subpath,
              cluster_scheduler, cluster_workdir) = it
-        def deformed_results = List.transpose([
+        def deformed_results = [
             moving_path, moving_subpath,
             output_path, output_subpath,
-        ])
+        ]
         def r = [
             fixed_path, fixed_subpath,
-            deformed_results,
+            deformed_results.transpose(),
             cluster_scheduler, cluster_workdir,
         ]
         log.debug "Prepare to gather final results $it -> $r"
     }
     
-    STOP_CLUSTER(deform_results_by_cluster.map { it[7] })
+    STOP_CLUSTER(deform_results_by_cluster.map { it[4] })
+
+    def final_results = normalized_inputs
+    | map {
+        def (global_fixed, global_fixed_dataset,
+             global_moving, global_moving_dataset,
+             global_steps,
+             global_output,
+             global_transform_name,
+             global_aligned_name,
+             local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_steps,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             deform_inputs) = it
+        [
+             local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             global_fixed, global_fixed_dataset,
+             global_moving, global_moving_dataset,
+             global_output,
+             global_transform_name,
+             global_aligned_name,
+        ]
+    }
+    | join(deform_results_by_cluster, by:[0,1])
+    | map {
+        def(
+            local_fixed, local_fixed_dataset,
+            local_moving, local_moving_dataset,
+            local_output,
+            local_transform_name,
+            local_aligned_name,
+            global_fixed, global_fixed_dataset,
+            global_moving, global_moving_dataset,
+            global_output,
+            global_transform_name,
+            global_aligned_name,
+            deformed_results
+        ) = it
+        def r = [
+            global_fixed, global_fixed_dataset,
+            global_moving, global_moving_dataset,
+            global_output,
+            global_transform_name,
+            global_aligned_name,
+            local_fixed, local_fixed_dataset,
+            local_moving, local_moving_dataset,
+            local_output,
+            local_transform_name,
+            local_aligned_name,
+            deformed_results,
+        ]
+        log.debug "Final results $it -> $r"
+        r
+    }
 
     emit:
-    done = local_deform_results
+    done = final_results
 }
