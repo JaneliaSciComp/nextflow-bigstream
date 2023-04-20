@@ -14,5 +14,5 @@ workflow STOP_CLUSTER {
     }
 
     emit:
-    work_dir
+    done
 }
