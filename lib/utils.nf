@@ -37,6 +37,14 @@ def parentfile(f) {
     }
 }
 
+def isparentfile(pf, f) {
+    if (f && pf) {
+        return "$f".startsWith("$pf")
+    } else {
+        return false
+    }
+}
+
 def get_mounted_vols_opts(paths) {
     def unique_paths = paths
                         .collect { normalized_file_name(it) }

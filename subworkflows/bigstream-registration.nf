@@ -169,7 +169,7 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     // start a dask cluster for local alignment
-    def cluster_info = normalized_inputs
+    def cluster_input = normalized_inputs
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
@@ -184,16 +184,20 @@ workflow BIGSTREAM_REGISTRATION {
              local_transform_name,
              local_aligned_name) = it
         def r = [
-            local_fixed,
-            local_moving,
-            global_output,
-            local_output,
-            normalized_file_name(params.local_working_path),
+            [
+                local_fixed, local_moving,
+            ],
+            [
+                global_output,
+                local_output,
+                normalized_file_name(params.local_working_path),
+            ],
         ]
         log.debug "Prepare cluster mounted paths: $it -> $r"
         return r
     }
-    | START_CLUSTER
+    def cluster_info = START_CLUSTER(cluster_input.map { it[0] },
+                                     cluster_input.map { it[1] })
     | map {
         def (cluster_id, cluster_scheduler, cluster_workdir, connected_workers) = it
         def current_cluster_info = [

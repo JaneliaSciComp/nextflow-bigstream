@@ -12,10 +12,13 @@ include {
 
 workflow START_CLUSTER {
     take:
-    cluster_accessible_paths
+    cluster_input_paths
+    cluster_output_paths
 
     main:
-    def accessible_paths = PREPARE_DIRS(cluster_accessible_paths)
+    def accessible_paths = PREPARE_DIRS(cluster_input_paths, cluster_output_paths)
+
+    accessible_paths.subscribe { log.debug "Cluster paths: $it" }
 
     if (params.with_dask_cluster) {
         cluster = CREATE_DASK_CLUSTER(
