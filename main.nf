@@ -55,6 +55,6 @@ def get_input_deform_params(deform_params) {
             .collect {
                 def deform_input = it.split(',').collect { it.trim() }
                 def (vol_path, vol_subpath, vol_deform_output) = deform_input
-                [ vol_path, vol_subpath, vol1_deform_output ]
+                [ vol_path, vol_subpath, vol_deform_output ]
             }
 }
