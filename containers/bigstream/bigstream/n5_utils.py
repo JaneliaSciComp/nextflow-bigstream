@@ -16,6 +16,7 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype,
                 chunks=chunks,
                 dtype=dtype,
                 data=data)
+            # set additional attributes
             dataset.attrs.update(**kwargs)
             return dataset
         else:
