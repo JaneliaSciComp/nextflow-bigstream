@@ -55,29 +55,29 @@ class _ArgsHelper:
 
 def _define_args(global_descriptor, local_descriptor):
     args_parser = argparse.ArgumentParser(description='Registration pipeline')
-    args_parser.add_argument('--fixed-lowres', dest='fixed_lowres',
-                             help='Path to the fixed low resolution volume')
+    args_parser.add_argument('--fixed-lowres', dest='fixed_global',
+                             help='Path to the fixed global (low resolution) volume')
     args_parser.add_argument('--fixed-lowres-subpath',
-                             dest='fixed_lowres_subpath',
-                             help='Fixed low resolution subpath')
+                             dest='fixed_global_subpath',
+                             help='Fixed global (low resolution) subpath')
 
-    args_parser.add_argument('--moving-lowres', dest='moving_lowres',
+    args_parser.add_argument('--moving-lowres', dest='moving_global',
                              help='Path to the moving low resolution volume')
     args_parser.add_argument('--moving-lowres-subpath',
-                             dest='moving_lowres_subpath',
-                             help='Moving low resolution subpath')
+                             dest='moving_global_subpath',
+                             help='Moving global (low resolution) subpath')
 
-    args_parser.add_argument('--fixed-highres', dest='fixed_highres',
-                             help='Path to the fixed high resolution volume')
+    args_parser.add_argument('--fixed-highres', dest='fixed_local',
+                             help='Path to the fixed local (high resolution) volume')
     args_parser.add_argument('--fixed-highres-subpath',
-                             dest='fixed_highres_subpath',
-                             help='Fixed high resolution subpath')
+                             dest='fixed_local_subpath',
+                             help='Fixed local (high resolution) subpath')
 
-    args_parser.add_argument('--moving-highres', dest='moving_highres',
-                             help='Path to the moving high resolution volume')
+    args_parser.add_argument('--moving-highres', dest='moving_local',
+                             help='Path to the moving local (high resolution) volume')
     args_parser.add_argument('--moving-highres-subpath',
-                             dest='moving_highres_subpath',
-                             help='Moving high resolution subpath')
+                             dest='moving_local_subpath',
+                             help='Moving local (high resolution) subpath')
 
     args_parser.add_argument('--use-existing-global-transform',
                              dest='use_existing_global_transform',
@@ -271,65 +271,67 @@ def _extract_working_dir(args, argdescriptor):
     return getattr(args, argdescriptor._argdest('working_dir'))
 
 
-def _run_lowres_alignment(args, steps, lowres_output_dir):
-    if lowres_output_dir and args.global_transform_name:
-        lowres_transform_file = (lowres_output_dir + '/' + 
+def _run_global_alignment(args, steps, global_output_dir):
+    if global_output_dir and args.global_transform_name:
+        global_transform_file = (global_output_dir + '/' + 
                                  args.global_transform_name)
     else:
-        lowres_transform_file = None
+        global_transform_file = None
 
     if (args.use_existing_global_transform and
-        lowres_transform_file and
-            exists(lowres_transform_file)):
-        print('Read global transform from', lowres_transform_file, flush=True)
-        lowres_transform = np.loadtxt(lowres_transform_file)
+        global_transform_file and
+            exists(global_transform_file)):
+        print('Read global transform from', global_transform_file, flush=True)
+        global_transform = np.loadtxt(global_transform_file)
     elif steps:
         print('Run global registration with:', args, steps, flush=True)
-        # Read the the lowres inputs
-        fix_lowres_ldata, fix_lowres_attrs = n5_utils.open(
-            args.fixed_lowres, args.fixed_lowres_subpath)
-        mov_lowres_ldata, mov_lowres_attrs = n5_utils.open(
-            args.moving_lowres, args.moving_lowres_subpath)
-        fix_lowres_voxel_spacing = n5_utils.get_voxel_spacing(fix_lowres_attrs)
-        mov_lowres_voxel_spacing = n5_utils.get_voxel_spacing(mov_lowres_attrs)
+        # Read the global inputs
+        fix_arraydata, fix_attrs = n5_utils.open(
+            args.fixed_global, args.fixed_global_subpath)
+        mov_arraydata, mov_attrs = n5_utils.open(
+            args.moving_global, args.moving_global_subpath)
+        fix_voxel_spacing = n5_utils.get_voxel_spacing(fix_attrs)
+        mov_voxel_spacing = n5_utils.get_voxel_spacing(mov_attrs)
 
         print('Fixed lowres volume attributes:',
-              fix_lowres_ldata.shape, fix_lowres_voxel_spacing, flush=True)
+              fix_arraydata.shape, fix_voxel_spacing, flush=True)
         print('Moving lowres volume attributes:',
-              mov_lowres_ldata.shape, mov_lowres_voxel_spacing, flush=True)
+              mov_arraydata.shape, mov_voxel_spacing, flush=True)
 
-        lowres_transform, lowres_alignment = _align_lowres_data(
-            fix_lowres_ldata[...],  # read image in memory
-            mov_lowres_ldata[...],
-            fix_lowres_voxel_spacing,
-            mov_lowres_voxel_spacing,
+        global_transform, global_alignment = _align_lowres_data(
+            fix_arraydata[...],  # read image in memory
+            mov_arraydata[...],
+            fix_voxel_spacing,
+            mov_voxel_spacing,
             steps)
 
-        if lowres_transform_file:
-            print('Save lowres transformation to', lowres_transform_file)
-            np.savetxt(lowres_transform_file, lowres_transform)
+        if global_transform_file:
+            print('Save lowres transformation to', global_transform_file)
+            np.savetxt(global_transform_file, global_transform)
         else:
             print('Skip saving lowres transformation')
 
-        if lowres_output_dir and args.global_aligned_name:
-            lowres_aligned_file = (lowres_output_dir + '/' + 
+        if global_output_dir and args.global_aligned_name:
+            global_aligned_file = (global_output_dir + '/' + 
                                    args.global_aligned_name)
-            print('Save lowres aligned volume to', lowres_aligned_file)
+            print('Save lowres aligned volume to', global_aligned_file)
             n5_utils.create_dataset(
-                lowres_aligned_file,
-                args.moving_lowres_subpath, # same dataset as the moving image
-                lowres_alignment.shape,
-                (args.output_chunk_size,)*lowres_alignment.ndim,
-                lowres_alignment.dtype,
-                data=lowres_alignment
+                global_aligned_file,
+                args.moving_global_subpath, # same dataset as the moving image
+                global_alignment.shape,
+                (args.output_chunk_size,)*global_alignment.ndim,
+                global_alignment.dtype,
+                data=global_alignment,
+                pixelResolution=mov_attrs.get('pixelResolution'),
+                downsamplingFactors=mov_attrs.get('downsamplingFactors'),
             )
         else:
             print('Skip savign lowres aligned volume')
     else:
         print('Skip global alignment because no global steps were specified.')
-        lowres_transform = None
+        global_transform = None
 
-    return lowres_transform
+    return global_transform
 
 
 def _align_lowres_data(fix_data,
@@ -359,22 +361,13 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         print('Run local registration with:', steps, flush=True)
 
         # Read the highres inputs - if highres is not defined default it to lowres
-        fix_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
-        mov_highres_path = args.fixed_highres if args.fixed_highres else args.fixed_lowres
+        fix_highres_path = args.fixed_local if args.fixed_local else args.fixed_global
+        mov_highres_path = args.fixed_local if args.fixed_local else args.fixed_global
 
         fix_highres_ldata, fix_highres_attrs = n5_utils.open(
-            fix_highres_path, args.fixed_highres_subpath)
+            fix_highres_path, args.fixed_local_subpath)
         mov_highres_ldata, mov_highres_attrs = n5_utils.open(
-            mov_highres_path, args.moving_highres_subpath)
-        fix_highres_voxel_spacing = n5_utils.get_voxel_spacing(
-            fix_highres_attrs)
-        mov_highres_voxel_spacing = n5_utils.get_voxel_spacing(
-            mov_highres_attrs)
-
-        print('Fixed highres volume attributes:',
-              fix_highres_ldata.shape, fix_highres_voxel_spacing, flush=True)
-        print('Moving highres volume attributes:',
-              mov_highres_ldata.shape, mov_highres_voxel_spacing, flush=True)
+            mov_highres_path, args.moving_local_subpath)
 
         if (args.dask_config):
             with open(args.dask_config) as f:
@@ -387,18 +380,18 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         else:
             cluster = local_cluster(config=dask_config)
 
-        _align_highres_data(
+        _align_local_data(
             fix_highres_ldata,
             mov_highres_ldata,
-            fix_highres_voxel_spacing,
-            mov_highres_voxel_spacing,
+            fix_highres_attrs,
+            mov_highres_attrs,
             steps,
             args.partition_blocksize,
             [global_transform] if global_transform is not None else [],
             output_dir,
             args.local_transform_name,
             args.local_aligned_name,
-            args.moving_highres_subpath,
+            args.moving_local_subpath,
             args.output_chunk_size,
             args.local_write_group_interval,
             cluster,
@@ -408,30 +401,41 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         print('Skip local alignment because no local steps were specified.')
 
 
-def _align_highres_data(fix_data,
-                        mov_data,
-                        fix_spacing,
-                        mov_spacing,
-                        steps,
-                        partitionsize,
-                        global_transforms_list,
-                        output_dir,
-                        highres_transform_name,
-                        highres_aligned_name,
-                        highres_subpath,
-                        output_chunk_size,
-                        write_group_interval,
-                        cluster,
-                        working_dir):
+def _align_local_data(fix_data,
+                      mov_data,
+                      fix_attrs,
+                      mov_attrs,
+                      steps,
+                      partitionsize,
+                      global_transforms_list,
+                      output_dir,
+                      highres_transform_name,
+                      highres_aligned_name,
+                      highres_subpath,
+                      output_chunk_size,
+                      write_group_interval,
+                      cluster,
+                      working_dir):
     print('Run high res alignment:', steps, partitionsize, flush=True)
     output_blocks = (output_chunk_size,) * fix_data.ndim
+
+    fix_spacing = n5_utils.get_voxel_spacing(fix_attrs)
+    mov_spacing = n5_utils.get_voxel_spacing(mov_attrs)
+
+    print('Align moving data',
+          mov_data.shape, mov_spacing,
+          'to reference',
+          fix_data.shape, fix_spacing,
+          flush=True)
+
     if output_dir and highres_transform_name:
         deform_transform_dataset = n5_utils.create_dataset(
             output_dir + '/' + highres_transform_name,
             None, # no dataset subpath
             fix_data.shape + (fix_data.ndim,),
             output_blocks + (fix_data.ndim,),
-            np.float32
+            np.float32,
+            # the transformation does not have to have spacing attributes
         )
     else:
         deform_transform_dataset = None
@@ -459,6 +463,8 @@ def _align_highres_data(fix_data,
             fix_data.shape,
             output_blocks,
             fix_data.dtype,
+            pixelResolution=mov_attrs.get('pixelResolution'),
+            downsamplingFactors=mov_attrs.get('downsamplingFactors'),
         )
         print('Apply local transformation -> ', aligned_dataset_name,
               flush=True)
@@ -496,7 +502,7 @@ if __name__ == '__main__':
     else:
         global_steps = []
 
-    global_transform = _run_lowres_alignment(
+    global_transform = _run_global_alignment(
         args,
         global_steps,
         _extract_output_dir(args, global_descriptor)

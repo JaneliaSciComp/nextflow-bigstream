@@ -2,7 +2,8 @@ import numpy as np
 import zarr
 
 
-def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None):
+def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None,
+                   **kwargs):
     try:
         n5_store = zarr.N5Store(n5_path)
         if n5_subpath:
@@ -13,7 +14,8 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None):
                 shape=shape,
                 chunks=chunks,
                 dtype=dtype,
-                data=data)
+                data=data,
+                **kwargs)
         else:
             print('Create root array', n5_path, flush=True)
             return zarr.open(store=n5_store, mode='a',
