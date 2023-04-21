@@ -2,20 +2,22 @@ import numpy as np
 import zarr
 
 
-def create_dataset(n5_path, n5_subpath, shape, chunks, dtype, data=None,
+def create_dataset(n5_path, n5_subpath, shape, chunks, dtype,
+                   data=None,
                    **kwargs):
     try:
         n5_store = zarr.N5Store(n5_path)
         if n5_subpath:
             print('Create dataset', n5_path, n5_subpath, flush=True)
             n5_root = zarr.open_group(store=n5_store, mode='a')
-            return n5_root.require_dataset(
+            dataset = n5_root.require_dataset(
                 n5_subpath,
                 shape=shape,
                 chunks=chunks,
                 dtype=dtype,
-                data=data,
-                **kwargs)
+                data=data)
+            dataset.attrs.update(**kwargs)
+            return dataset
         else:
             print('Create root array', n5_path, flush=True)
             return zarr.open(store=n5_store, mode='a',

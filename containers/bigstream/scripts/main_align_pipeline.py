@@ -55,27 +55,39 @@ class _ArgsHelper:
 
 def _define_args(global_descriptor, local_descriptor):
     args_parser = argparse.ArgumentParser(description='Registration pipeline')
-    args_parser.add_argument('--fixed-lowres', dest='fixed_global',
-                             help='Path to the fixed global (low resolution) volume')
-    args_parser.add_argument('--fixed-lowres-subpath',
+    args_parser.add_argument('--fixed-global',
+                             '--fixed-lowres',
+                             dest='fixed_global',
+                             help='Fixed global (low resolution) volume path')
+    args_parser.add_argument('--fixed-global-subpath',
+                             '--fixed-lowres-subpath',
                              dest='fixed_global_subpath',
                              help='Fixed global (low resolution) subpath')
 
-    args_parser.add_argument('--moving-lowres', dest='moving_global',
-                             help='Path to the moving low resolution volume')
-    args_parser.add_argument('--moving-lowres-subpath',
+    args_parser.add_argument('--moving-global',
+                             '--moving-lowres',
+                             dest='moving_global',
+                             help='Moving global (low resolution) volume path')
+    args_parser.add_argument('--moving-global-subpath',
+                             '--moving-lowres-subpath',
                              dest='moving_global_subpath',
                              help='Moving global (low resolution) subpath')
 
-    args_parser.add_argument('--fixed-highres', dest='fixed_local',
+    args_parser.add_argument('--fixed-local',
+                             '--fixed-highres',
+                             dest='fixed_local',
                              help='Path to the fixed local (high resolution) volume')
-    args_parser.add_argument('--fixed-highres-subpath',
+    args_parser.add_argument('--fixed-local-subpath',
+                             '--fixed-highres-subpath',
                              dest='fixed_local_subpath',
                              help='Fixed local (high resolution) subpath')
 
-    args_parser.add_argument('--moving-highres', dest='moving_local',
+    args_parser.add_argument('--moving-local',
+                             '--moving-highres',
+                             dest='moving_local',
                              help='Path to the moving local (high resolution) volume')
-    args_parser.add_argument('--moving-highres-subpath',
+    args_parser.add_argument('--moving-local-subpath',
+                             '--moving-highres-subpath',
                              dest='moving_local_subpath',
                              help='Moving local (high resolution) subpath')
 
