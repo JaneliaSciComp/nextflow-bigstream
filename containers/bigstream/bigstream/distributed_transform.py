@@ -250,8 +250,8 @@ def distributed_apply_transform_to_coordinates(
     coordinates,
     transform_list,
     partition_size=30.,
-    points_spacing=None,
-    points_origin=None,
+    coords_spacing=None,
+    coords_origin=None,
     temporary_directory=None,
     cluster=None,
     cluster_kwargs={},
@@ -333,7 +333,7 @@ def distributed_apply_transform_to_coordinates(
     futures = cluster.client.map(
         _transform_coords,
         partitions,
-        coord_spacing=points_spacing,
+        coords_spacing=coords_spacing,
         transform_list=transform_list,
     )
     results = cluster.client.gather(futures)
@@ -341,15 +341,15 @@ def distributed_apply_transform_to_coordinates(
     return np.concatenate(results, axis=0)
 
 
-def _transform_coords(coordinates, coord_spacing, transform_list):
-
+def _transform_coords(coordinates, coords_spacing, transform_list):
     # read relevant region of transform
     a = np.min(coordinates, axis=0)
     b = np.max(coordinates, axis=0)
     cropped_transforms = []
     for iii, transform in enumerate(transform_list):
         if transform.shape != (4, 4):
-            spacing = coord_spacing
+            # for vector displacement fields crop the transformation
+            spacing = coords_spacing
             if isinstance(spacing, tuple): spacing = spacing[iii]
             start = np.floor(a / spacing).astype(int)
             stop = np.ceil(b / spacing).astype(int) + 1
@@ -357,12 +357,13 @@ def _transform_coords(coordinates, coord_spacing, transform_list):
             cropped_transform = transform[crop]
             cropped_transforms.append(cropped_transform)
         else:
+            # no need to do any cropping if it's an affine matrix
             cropped_transforms.append(transform)
 
     # apply transforms
     return cs_transform.apply_transform_to_coordinates(
         coordinates,
         cropped_transforms,
-        coord_spacing,
+        coords_spacing,
         transform_origin=a,
     )

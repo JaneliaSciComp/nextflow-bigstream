@@ -40,10 +40,10 @@ def _define_args():
                              help='Affine transformations')
 
     args_parser.add_argument('--local-transform', dest='local_transform',
-                             help='Local transformation')
+                             help='Local (vector field) transformation')
     args_parser.add_argument('--local-transform-subpath',
                              dest='local_transform_subpath',
-                             help='Transformation to be applied')
+                             help='Local transformation dataset to be applied')
 
     args_parser.add_argument('--output',
                              dest='output',
@@ -79,7 +79,7 @@ def _define_args():
 
 def _run_apply_transform(args):
 
-    # Read the highres inputs - if highres is not defined default it to lowres
+    # Read the datasets - if the moving dataset is not defined it defaults to the fixed dataset
     fix_subpath = args.fixed_subpath
     mov_subpath = args.moving_subpath if args.moving_subpath else fix_subpath
     output_subpath = args.output_subpath if args.output_subpath else mov_subpath
