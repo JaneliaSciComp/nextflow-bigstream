@@ -34,10 +34,10 @@ def _define_args():
                              dest='moving_subpath',
                              help='Moving image subpath')
 
-    args_parser.add_argument('--global-transformations',
-                             dest='global_transformations',
+    args_parser.add_argument('--affine-transformations',
+                             dest='affine_transformations',
                              type=_stringlist,
-                             help='Global transformations')
+                             help='Affine transformations')
 
     args_parser.add_argument('--local-transform', dest='local_transform',
                              help='Local transformation')
@@ -120,18 +120,18 @@ def _run_apply_transform(args):
             fix_data.dtype,
         )
 
-        if args.global_transformations:
-            global_transforms_list = [np.loadtxt(tfile)
-                                      for tfile in args.global_transformations]
+        if args.affine_transformations:
+            affine_transforms_list = [np.loadtxt(tfile)
+                                      for tfile in args.affine_transformations]
         else:
-            global_transforms_list = []
+            affine_transforms_list = []
 
         output = distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
             args.partition_blocksize,
             output_blocks,
-            transform_list=global_transforms_list + [local_deform],
+            transform_list=affine_transforms_list + [local_deform],
             aligned_dataset=output_dataset,
             cluster=cluster,
             temporary_directory=args.working_dir,

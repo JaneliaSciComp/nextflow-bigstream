@@ -35,7 +35,7 @@ process GLOBAL_TRANSFORM {
         ? "--output-subpath ${output_subpath}"
         : ''
     def transforms_arg = global_transform
-        ? "--global-transformations ${global_transform}"
+        ? "--affine-transformations ${global_transform}"
         : ''
     """
     umask 0002

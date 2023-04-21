@@ -28,10 +28,10 @@ def _define_args():
                              dest='moving_subpath',
                              help='Moving image subpath')
 
-    args_parser.add_argument('--global-transformations',
-                             dest='global_transformations',
+    args_parser.add_argument('--affine-transformations',
+                             dest='affine_transformations',
                              type=_stringlist,
-                             help='Global transformations')
+                             help='Affine transformations')
 
     args_parser.add_argument('--output',
                              dest='output',
@@ -69,11 +69,11 @@ def _run_apply_transform(args):
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
 
     if args.output:
-        if args.global_transformations:
-            transforms_list = [np.loadtxt(tfile) 
-                               for tfile in args.global_transformations]
+        if args.affine_transformations:
+            transforms_list = [np.loadtxt(tfile)
+                               for tfile in args.affine_transformations]
         else:
-            transforms_list = []            
+            transforms_list = []
 
         transformed = apply_transform(
             fix_data, mov_data,

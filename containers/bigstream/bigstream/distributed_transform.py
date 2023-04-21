@@ -2,7 +2,6 @@ import dask.array as da
 import numpy as np
 import os
 import tempfile
-import zarr
 
 import bigstream.transform as cs_transform
 import bigstream.utility as ut
@@ -244,3 +243,126 @@ def _transform_single_block(block_coords,
 
     # return result
     return aligned
+
+
+@cluster
+def distributed_apply_transform_to_coordinates(
+    coordinates,
+    transform_list,
+    partition_size=30.,
+    points_spacing=None,
+    points_origin=None,
+    temporary_directory=None,
+    cluster=None,
+    cluster_kwargs={},
+):
+    """
+    Move a set of coordinates through a list of transforms
+    Transforms can be larger-than-memory
+
+    Parameters
+    ----------
+    coordinates : Nxd array
+        The coordinates to move. N such coordinates in d dimensions.
+
+    transform_list : list
+        The transforms to apply, in stack order. Elements must be 2d 4x4 arrays
+        (affine transforms) or d + 1 dimension arrays (deformations).
+        Zarr arrays work just fine.
+
+    partition_size : scalar float (default: 30.)
+        Size of blocks that domain is carved into for distributed computation
+        in same units as coordinates
+
+    transform_spacing : 1d array or tuple of 1d arrays (default: None)
+        The spacing in physical units (e.g. mm or um) between voxels
+        of any deformations in the transform_list. If any transform_list
+        contains any deformations then transform_spacing cannot be None.
+        If a single 1d array then all deforms have that spacing.
+        If a tuple, then its length must be the same as transform_list,
+        thus each deformation can be given its own spacing. Spacings given
+        for affine transforms are ignored.
+
+    transform_origin : 1d array or tuple of 1d arrays (default: None)
+        The origin in physical units (e.g. mm or um) of the given transforms.
+        If None, all origins are assumed to be (0, 0, 0, ...); otherwise, follows
+        the same logic as transform_spacing. Origins given for affine transforms
+        are ignored.
+
+    temporary_directory : string (default: None)
+        A parent directory for temporary data written to disk during computation
+        If None then the current directory is used
+
+    cluster : ClusterWrap.cluster object (default: None)
+        Only set if you have constructed your own static cluster. The default behavior
+        is to construct a cluster for the duration of this function, then close it
+        when the function is finished.
+
+    cluster_kwargs : dict (default: {})
+        Arguments passed to ClusterWrap.cluster
+        If working with an LSF cluster, this will be
+        ClusterWrap.janelia_lsf_cluster. If on a workstation
+        this will be ClusterWrap.local_cluster.
+        This is how distribution parameters are specified.
+
+    Returns
+    -------
+    transformed_coordinates : Nxd array
+        The given coordinates transformed by the given transform_list
+    """
+
+    # temporary file paths and ensure inputs are zarr
+    temporary_directory = tempfile.TemporaryDirectory(
+        prefix='.', dir=temporary_directory or os.getcwd(),
+    )
+
+    # determine partitions of coordinates
+    origin = np.min(coordinates, axis=0)
+    nblocks = np.max(coordinates, axis=0) - origin
+    nblocks = np.ceil(nblocks / partition_size).astype(int)
+    partitions = []
+    for (i, j, k) in np.ndindex(*nblocks):
+        lower_bound = origin + partition_size * np.array((i, j, k))
+        upper_bound = lower_bound + partition_size
+        not_too_low = np.all(coordinates >= lower_bound, axis=1)
+        not_too_high = np.all(coordinates < upper_bound, axis=1)
+        coords = coordinates[ not_too_low * not_too_high ]
+        if coords.size != 0: partitions.append(coords)
+
+    # transform all partitions and return
+    futures = cluster.client.map(
+        _transform_coords,
+        partitions,
+        coord_spacing=points_spacing,
+        transform_list=transform_list,
+    )
+    results = cluster.client.gather(futures)
+
+    return np.concatenate(results, axis=0)
+
+
+def _transform_coords(coordinates, coord_spacing, transform_list):
+
+    # read relevant region of transform
+    a = np.min(coordinates, axis=0)
+    b = np.max(coordinates, axis=0)
+    cropped_transforms = []
+    for iii, transform in enumerate(transform_list):
+        if transform.shape != (4, 4):
+            spacing = coord_spacing
+            if isinstance(spacing, tuple): spacing = spacing[iii]
+            start = np.floor(a / spacing).astype(int)
+            stop = np.ceil(b / spacing).astype(int) + 1
+            crop = tuple(slice(x, y) for x, y in zip(start, stop))
+            cropped_transform = transform[crop]
+            cropped_transforms.append(cropped_transform)
+        else:
+            cropped_transforms.append(transform)
+
+    # apply transforms
+    return cs_transform.apply_transform_to_coordinates(
+        coordinates,
+        cropped_transforms,
+        coord_spacing,
+        transform_origin=a,
+    )

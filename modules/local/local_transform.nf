@@ -12,7 +12,7 @@ process LOCAL_TRANSFORM {
         parentfile(output_path, 1),
         parentfile(global_transform, 1),
         parentfile(local_transform, 1),
-        parentfile(params.local_working_path, 1),
+        parentfile(params.local_working_path, 2),
         parentfile(params.dask_config, 1)]) }
 
     memory { "${mem_gb} GB" }
@@ -40,8 +40,8 @@ process LOCAL_TRANSFORM {
     def output_subpath_arg = output_subpath
         ? "--output-subpath ${output_subpath}"
         : ''
-    def global_transforms_arg = global_transform
-        ? "--global-transformations ${global_transform}"
+    def affine_transforms_arg = global_transform
+        ? "--affine-transformations ${global_transform}"
         : ''
     def local_transform_arg = local_transform_path
         ? "--local-transform ${local_transform_path}"
@@ -70,7 +70,7 @@ process LOCAL_TRANSFORM {
         --fixed ${fixed_path} --fixed-subpath ${fixed_subpath} \
         --moving ${moving_path} --moving-subpath ${moving_subpath} \
         --output ${output_path} ${output_subpath_arg} \
-        ${global_transforms_arg} \
+        ${affine_transforms_arg} \
         ${local_transform_arg} ${local_transform_subpath_arg} \
         ${working_dir_arg} \
         --output-chunk-size ${params.local_blocksize} \
