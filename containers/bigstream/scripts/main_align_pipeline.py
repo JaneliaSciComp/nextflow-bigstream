@@ -179,6 +179,26 @@ def _define_args(global_descriptor, local_descriptor):
 
 
 def _define_ransac_args(ransac_args, args):
+    ransac_args.add_argument(args._argflag('ransac-num-sigma-max'),
+                             dest=args._argdest('num_sigma_max'),
+                             type=int,
+                             default=15,
+                             help='Ransac sigma max')
+    ransac_args.add_argument(args._argflag('ransac-cc-radius'),
+                             dest=args._argdest('cc_radius'),
+                             type=int,
+                             default=12,
+                             help='Ransac radius')
+    ransac_args.add_argument(args._argflag('ransac-match-threshold'),
+                             dest=args._argdest('match_threshold'),
+                             type=float,
+                             default=0.7,
+                             help='Ransac match threshold')
+    ransac_args.add_argument(args._argflag('ransac-align-threshold'),
+                             dest=args._argdest('align_threshold'),
+                             type=float,
+                             default=2.0,
+                             help='Ransac match threshold')
     ransac_args.add_argument(args._argflag('ransac-blob-sizes'),
                              dest=args._argdest('blob_sizes'),
                              metavar='s1,s2,...,sn',
@@ -233,6 +253,18 @@ def _check_attr(args, argdescriptor, argname):
 
 def _extract_ransac_args(args, argdescriptor):
     ransac_args = {}
+    if _check_attr(args, argdescriptor, 'num_sigma_max'):
+        ransac_args['num_sigma_max'] = getattr(
+            args, argdescriptor._argdest('num_sigma_max'))
+    if _check_attr(args, argdescriptor, 'cc_radius'):
+        ransac_args['cc_radius'] = getattr(
+            args, argdescriptor._argdest('cc_radius'))
+    if _check_attr(args, argdescriptor, 'match_threshold'):
+        ransac_args['match_threshold'] = getattr(
+            args, argdescriptor._argdest('match_threshold'))
+    if _check_attr(args, argdescriptor, 'align_threshold'):
+        ransac_args['align_threshold'] = getattr(
+            args, argdescriptor._argdest('align_threshold'))
     if _check_attr(args, argdescriptor, 'blob_sizes'):
         ransac_args['blob_sizes'] = getattr(
             args, argdescriptor._argdest('blob_sizes'))

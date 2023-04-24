@@ -137,9 +137,19 @@ process BIGSTREAM {
         --partition-blocksize ${params.local_partitionsize} \
         --output-chunk-size ${params.local_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
+        --global-ransac-ransac-num-sigma-max ${params.global_ransac_num_sigma_max} \
+        --global-ransac-ransac-cc-radius ${params.global_ransac_cc_radius} \
+        --global-ransac-ransac-match-threshold ${params.global_ransac_match_threshold} \
+        --global-ransac-ransac-align-threshold ${params.global_ransac_align_threshold} \
+        --global-ransac-blob-sizes ${params.global_ransac_blob_sizes} \
         --global-smooth-sigmas ${params.global_smooth_sigmas} \
         --global-learning-rate ${params.global_learning_rate} \
         --global-iterations ${params.global_iterations} \
+        --local-ransac-ransac-num-sigma-max ${params.local_ransac_num_sigma_max} \
+        --local-ransac-ransac-cc-radius ${params.local_ransac_cc_radius} \
+        --local-ransac-ransac-match-threshold ${params.local_ransac_match_threshold} \
+        --local-ransac-ransac-align-threshold ${params.local_ransac_align_threshold} \
+        --local-ransac-blob-sizes ${params.local_ransac_blob_sizes} \
         --local-smooth-sigmas ${params.local_smooth_sigmas} \
         --local-learning-rate ${params.local_learning_rate} \
         --local-iterations ${params.local_iterations} \
