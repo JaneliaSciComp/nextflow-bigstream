@@ -168,43 +168,6 @@ workflow BIGSTREAM_REGISTRATION {
         log.debug "Completed global alignment for: $it"
     }
 
-    // start a dask cluster for local alignment
-    def cluster_input = global_alignment_results
-    | map {
-        def (global_fixed, global_fixed_dataset,
-             global_moving, global_moving_dataset,
-             global_output,
-             global_transform_name,
-             global_aligned_name,
-             local_fixed, local_fixed_dataset,
-             local_moving, local_moving_dataset,
-             local_output,
-             local_transform_name,
-             local_aligned_name) = it
-        def r = [
-            [
-                local_fixed, local_moving,
-            ],
-            [
-                global_output,
-                local_output,
-                normalized_file_name(params.local_working_path),
-            ],
-        ]
-        log.debug "Prepare cluster mounted paths: $it -> $r"
-        return r
-    }
-    def cluster_info = START_CLUSTER(cluster_input.map { it[0] },
-                                     cluster_input.map { it[1] })
-    | map {
-        def (cluster_id, cluster_scheduler, cluster_workdir, connected_workers) = it
-        def current_cluster_info = [
-            cluster_scheduler, cluster_workdir,
-        ]
-        log.debug "Current cluster: $it -> ${current_cluster_info}"
-        current_cluster_info
-    }
-
     def local_inputs = normalized_inputs
     | join(global_alignment_results, by:[0,1,2,3])
     | map {
@@ -233,6 +196,43 @@ workflow BIGSTREAM_REGISTRATION {
         log.debug "Prepare local alignment: $it -> $r"
         return r
     }
+
+    // start a dask cluster for local alignment
+    def cluster_input = local_inputs
+    | map {
+        def (local_fixed, local_fixed_dataset,
+             local_moving, local_moving_dataset,
+             local_steps,
+             local_output,
+             local_transform_name,
+             local_aligned_name,
+             global_output,
+             global_transform_name) = it
+        def r = [
+            [
+                local_fixed, local_moving,
+            ],
+            [
+                global_output,
+                local_output,
+                normalized_file_name(params.local_working_path),
+            ],
+        ]
+        log.debug "Prepare cluster mounted paths: $it -> $r"
+        return r
+    }
+
+    def cluster_info = START_CLUSTER(cluster_input.map { it[0] },
+                                     cluster_input.map { it[1] })
+    | map {
+        def (cluster_id, cluster_scheduler, cluster_workdir, connected_workers) = it
+        def current_cluster_info = [
+            cluster_scheduler, cluster_workdir,
+        ]
+        log.debug "Current cluster: $it -> ${current_cluster_info}"
+        current_cluster_info
+    }
+
 
     def local_alignment_results = LOCAL_BIGSTREAM_ALIGN(local_inputs, cluster_info)
 
