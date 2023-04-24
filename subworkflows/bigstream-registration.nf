@@ -169,17 +169,15 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     // start a dask cluster for local alignment
-    def cluster_input = normalized_inputs
+    def cluster_input = global_alignment_results
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
-             global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
-             local_steps,
              local_output,
              local_transform_name,
              local_aligned_name) = it
