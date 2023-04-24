@@ -37,7 +37,7 @@ workflow BIGSTREAM_REGISTRATION {
                        //  local_output,
                        //  local_transform_name,
                        //  local_aligned_name]
-    deform_input       // [[volume_path, volume_dataset, output_warped_name],...] - the list of additional volumes that must be warped
+    deform_input       // [[volume_path, volume_dataset, warped_vol_output_path],...] - the list of additional volumes that must be warped
 
     main:
 
