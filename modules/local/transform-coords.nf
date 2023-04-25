@@ -9,6 +9,7 @@ process TRANSFORM_COORDS {
     containerOptions { get_runtime_opts([
         parentfile(input_coords, 1),
         parentfile(output_coords, 2),
+        parentfile(input_coords_volume, 1),
         parentfile(affine_transform, 1),
         parentfile(vector_field_transform_path, 1),
         parentfile(params.local_working_path, 2),
@@ -22,8 +23,8 @@ process TRANSFORM_COORDS {
           val(output_coords),
           val(pixel_resolution),
           val(downsampling_factors),
-          val(input_volume),
-          val(input_dataset)
+          val(input_coords_volume),
+          val(input_coords_dataset)
     tuple val(affine_transform),
           val(vector_field_transform_path),
           val(vector_field_transform_subpath)
@@ -45,11 +46,11 @@ process TRANSFORM_COORDS {
     def downsampling_factors_arg = downsampling_factors
         ? "--downsampling ${downsampling_factors}"
         : ''
-    def input_volume_arg = input_volume
-        ? "--input-volume ${input_volume}"
+    def input_coords_volume_arg = input_coords_volume
+        ? "--input-volume ${input_coords_volume}"
         : ''
-    def input_dataset_arg = input_dataset
-        ? "--input-dataset ${input_dataset}"
+    def input_coords_dataset_arg = input_coords_dataset
+        ? "--input-dataset ${input_coords_dataset}"
         : ''
     def affine_transforms_arg = affine_transform
         ? "--affine-transformations ${affine_transform}"
@@ -85,8 +86,8 @@ process TRANSFORM_COORDS {
         --output-coords ${output_coords} \
         ${pixel_resolutions_arg} \
         ${downsampling_factors_arg} \
-        ${input_volume_arg} \
-        ${input_dataset_arg} \
+        ${input_coords_volume_arg} \
+        ${input_coords_dataset_arg} \
         ${affine_transforms_arg} \
         ${vector_field_transform_arg} \
         ${vector_field_transform_subpath_arg} \
