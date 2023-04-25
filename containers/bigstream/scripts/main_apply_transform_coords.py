@@ -97,20 +97,18 @@ def _get_voxel_spacing(pixel_resolution, downsampling_factors,
         downsampling_factors is not None):
         voxel_spacing = (np.array(pixel_resolution) * 
                          np.array(downsampling_factors))
+        return voxel_spacing[::-1] # zyx order
     elif (pixel_resolution is not None):
         voxel_spacing = np.array(pixel_resolution)
-
-    if voxel_spacing is not None:
-        # if voxel spacing is set return it in zyx order
-        return voxel_spacing[::-1]
+        return voxel_spacing[::-1] # zyx order
 
     if input_volume_path is not None:
         _, volume_attrs = n5_utils.open(
             input_volume_path, input_dataset)
         return n5_utils.get_voxel_spacing(volume_attrs)
-
-    print('Not enough information to get voxel spacing')
-    return None
+    else:
+        print('Not enough information to get voxel spacing')
+        return None
 
 
 def _run_apply_transform(args):
