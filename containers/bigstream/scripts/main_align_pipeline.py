@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-import nrrd
 import bigstream.n5_utils as n5_utils
 import yaml
 
