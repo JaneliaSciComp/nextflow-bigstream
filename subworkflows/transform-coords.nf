@@ -33,6 +33,8 @@ workflow TRANSFORM_COORDS {
         def (index, ci) = it
         def (coords_file,
              warped_coords_file,
+             pixel_resolution,
+             downsampling_factors,
              coords_volume,
              coords_dataset) = ci
         [
