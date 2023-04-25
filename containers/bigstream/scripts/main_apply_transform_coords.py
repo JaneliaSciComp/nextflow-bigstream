@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-import nrrd
 import bigstream.n5_utils as n5_utils
 import yaml
 
@@ -47,6 +46,10 @@ def _define_args():
                              dest='downsampling',
                              type=_inttuple,
                              help='Downsampling factors')
+    args_parser.add_argument('--input-volume', dest='input_volume',
+                             help='Path to input volume')
+    args_parser.add_argument('--input-dataset', dest='input_dataset',
+                             help='Input volume dataset')
 
     args_parser.add_argument('--output-coords', dest='output_coords',
                              help='Path to warped coordinates file')
@@ -83,15 +86,26 @@ def _define_args():
     return args_parser
 
 
-def _get_voxel_spacing(pixel_resolution, downsampling_factors):
+def _get_voxel_spacing(pixel_resolution, downsampling_factors,
+                       input_volume_path, input_dataset):
     if (pixel_resolution is not None and
         downsampling_factors is not None):
         voxel_spacing = (np.array(pixel_resolution) * 
                          np.array(downsampling_factors))
     elif (pixel_resolution is not None):
         voxel_spacing = np.array(pixel_resolution)
-    # if voxel spacing is set return it in zyx order
-    return voxel_spacing[::-1] if voxel_spacing is not None else None
+
+    if voxel_spacing is not None:
+        # if voxel spacing is set return it in zyx order
+        return voxel_spacing[::-1]
+
+    if input_volume_path is not None:
+        _, volume_attrs = n5_utils.open(
+            input_volume_path, input_dataset)
+        return n5_utils.get_voxel_spacing(volume_attrs)
+
+    print('Not enough information to get voxel spacing')
+    return None
 
 
 def _run_apply_transform(args):
@@ -126,7 +140,9 @@ def _run_apply_transform(args):
             affine_transforms_list = []
 
         voxel_spacing = _get_voxel_spacing(args.pixel_resolution,
-                                           args.downsampling)
+                                           args.downsampling,
+                                           args.input_volume,
+                                           args.input_dataset)
 
         warped_coords = distributed_apply_transform_to_coordinates(
             coords,
