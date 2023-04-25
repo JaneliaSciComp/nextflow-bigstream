@@ -8,15 +8,15 @@ include {
 
 include {
     START_CLUSTER;
-} from './start_cluster'
+} from './start-cluster'
 
 include {
     STOP_CLUSTER;
-} from './stop_cluster'
+} from './stop-cluster'
 
 include {
     LOCAL_TRANSFORM
-} from '../modules/local/local_transform'
+} from '../modules/local/local-transform'
 
 include {
     normalized_file_name;

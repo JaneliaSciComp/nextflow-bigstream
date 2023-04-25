@@ -8,7 +8,7 @@ include {
 
 include {
     PREPARE_DIRS;
-} from '../modules/local/prepare_dirs'
+} from '../modules/local/prepare-dirs'
 
 workflow START_CLUSTER {
     take:
