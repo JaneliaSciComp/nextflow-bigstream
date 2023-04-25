@@ -317,17 +317,20 @@ def distributed_apply_transform_to_coordinates(
     )
 
     # determine partitions of coordinates
-    origin = np.min(coordinates, axis=0)
-    nblocks = np.max(coordinates, axis=0) - origin
-    nblocks = np.ceil(nblocks / partition_size).astype(int)
+    origin = np.min(coordinates[:, 0:3], axis=0)
+    maxblock = np.max(coordinates[:, 0:3], axis=0)
+    blocksdims = maxblock - origin
+    nblocks = np.ceil(blocksdims / partition_size).astype(int)
+    print('Min:', origin, 'Max:', maxblock, 
+          'Dims:', blocksdims, 'NBlocks:', nblocks)
     partitions = []
     for (i, j, k) in np.ndindex(*nblocks):
         lower_bound = origin + partition_size * np.array((i, j, k))
         upper_bound = lower_bound + partition_size
-        not_too_low = np.all(coordinates >= lower_bound, axis=1)
-        not_too_high = np.all(coordinates < upper_bound, axis=1)
-        coords = coordinates[ not_too_low * not_too_high ]
-        if coords.size != 0: partitions.append(coords)
+        not_too_low = np.all(coordinates[:, 0:3] >= lower_bound, axis=1)
+        not_too_high = np.all(coordinates[:, 0:3] < upper_bound, axis=1)
+        pcoords = coordinates[ not_too_low * not_too_high ]
+        if pcoords.size != 0: partitions.append(pcoords)
 
     # transform all partitions and return
     futures = cluster.client.map(
@@ -336,15 +339,19 @@ def distributed_apply_transform_to_coordinates(
         coords_spacing=coords_spacing,
         transform_list=transform_list,
     )
+
+    future_keys = [f.key for f in futures]
+
     results = cluster.client.gather(futures)
 
     return np.concatenate(results, axis=0)
 
 
-def _transform_coords(coordinates, coords_spacing, transform_list):
+def _transform_coords(coord_indexed_values, coords_spacing, transform_list):
     # read relevant region of transform
-    a = np.min(coordinates, axis=0)
-    b = np.max(coordinates, axis=0)
+    point_coords = coord_indexed_values[:, 0:3]
+    a = np.min(point_coords, axis=0)
+    b = np.max(point_coords, axis=0)
     cropped_transforms = []
     for iii, transform in enumerate(transform_list):
         if transform.shape != (4, 4):
@@ -361,9 +368,18 @@ def _transform_coords(coordinates, coords_spacing, transform_list):
             cropped_transforms.append(transform)
 
     # apply transforms
-    return cs_transform.apply_transform_to_coordinates(
-        coordinates,
+    warped_point_coords = cs_transform.apply_transform_to_coordinates(
+        point_coords,
         cropped_transforms,
         coords_spacing,
         transform_origin=a,
     )
+    points_values = coord_indexed_values[:, 3:]
+
+    if points_values.shape[1] == 0:
+        return warped_coords_indexed_values
+    else:
+        warped_coords_indexed_values = np.empty_like(coord_indexed_values)
+        warped_coords_indexed_values[:, 0:3] = warped_point_coords
+        warped_coords_indexed_values[:, 3:] = points_values
+        return warped_coords_indexed_values
