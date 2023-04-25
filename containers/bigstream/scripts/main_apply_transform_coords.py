@@ -40,10 +40,12 @@ def _define_args():
                              help='Path to input coordinates file')
     args_parser.add_argument('--pixel-resolution',
                              dest='pixel_resolution',
+                             metavar='xres,yres,zres',
                              type=_floattuple,
                              help='Pixel resolution')
     args_parser.add_argument('--downsampling',
                              dest='downsampling',
+                             metavar='xfactor,yfactor,zfactor',
                              type=_inttuple,
                              help='Downsampling factors')
     args_parser.add_argument('--input-volume', dest='input_volume',
@@ -59,9 +61,12 @@ def _define_args():
                              type=_stringlist,
                              help='Affine transformations')
 
-    args_parser.add_argument('--local-transform', dest='local_transform',
+    args_parser.add_argument('--local-transform',
+                             '--vector-field-transform',
+                             dest='local_transform',
                              help='Local (vector field) transformation')
     args_parser.add_argument('--local-transform-subpath',
+                             '--vector-field-transform-subpath',
                              dest='local_transform_subpath',
                              help='Local transformation dataset to be applied')
 

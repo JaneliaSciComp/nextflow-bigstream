@@ -56,5 +56,6 @@ def bigstream_params() {
         additional_deforms: '',
         deform_local_cpus: 1,
         deform_local_mem_gb: 1,
+        warp_coords_partitionsize: 0,
     ]
 }
