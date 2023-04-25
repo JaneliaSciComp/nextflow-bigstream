@@ -8,7 +8,7 @@ process TRANSFORM_COORDS {
     container { params.bigstream_container }
     containerOptions { get_runtime_opts([
         parentfile(input_coords, 1),
-        parentfile(output_coords, 2),
+        parentfile(warped_coords, 2),
         parentfile(input_coords_volume, 1),
         parentfile(affine_transform, 1),
         parentfile(vector_field_transform_path, 1),
@@ -20,7 +20,7 @@ process TRANSFORM_COORDS {
 
     input:
     tuple val(input_coords),
-          val(output_coords),
+          val(warped_coords),
           val(pixel_resolution),
           val(downsampling_factors),
           val(input_coords_volume),
@@ -34,11 +34,11 @@ process TRANSFORM_COORDS {
     val(mem_gb)
 
     output:
-    tuple val(input_coords), val(output_coords),
+    tuple val(input_coords), val(warped_coords),
           val(cluster_scheduler), val(cluster_workdir)
 
     script:
-    def parent_output = file(output_coords).parent
+    def warped_coords_dir = file(warped_coords).parent
 
     def pixel_resolutions_arg = pixel_resolution
         ? "--pixel-resolution ${pixel_resolution}"
@@ -79,11 +79,11 @@ process TRANSFORM_COORDS {
         : ''
     """
     umask 0002
-    mkdir -p ${parent_output}
+    mkdir -p ${warped_coords_dir}
     ${mk_working_dir}
     python /app/bigstream/scripts/main_apply_transform_coords.py \
         --input-coords ${input_coords} \
-        --output-coords ${output_coords} \
+        --output-coords ${warped_coords} \
         ${pixel_resolutions_arg} \
         ${downsampling_factors_arg} \
         ${input_coords_volume_arg} \

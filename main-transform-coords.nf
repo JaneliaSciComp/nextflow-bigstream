@@ -18,8 +18,10 @@ workflow {
                     [
                         final_params.coords_path,
                         final_params.warped_coords_path,
-                        final_params.coords_volume_path,
-                        final_params.coords_volume_subpath,
+                        '', // pixel resolution
+                        '', // downsampling factors
+                        final_params.local_moving_path,
+                        final_params.local_moving_subpath,
                     ]),
                 Channel.of(
                     [
