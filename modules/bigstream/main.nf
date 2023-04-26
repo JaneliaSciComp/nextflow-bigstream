@@ -69,10 +69,10 @@ process BIGSTREAM {
     def global_output_arg = global_output_path
         ? "--global-output-dir ${global_output_path}"
         : ''
-    def global_transform_name = global_transform_name
+    def global_transform_name_arg = global_transform_name
         ? "--global-transform-name ${global_transform_name}"
         : ''
-    def global_aligned_name = global_aligned_name
+    def global_aligned_name_arg = global_aligned_name
         ? "--global-aligned-name ${global_aligned_name}"
         : ''
     def mk_global_transform_path = get_mkdir_command(global_output_path, global_transform_name)
@@ -89,10 +89,10 @@ process BIGSTREAM {
     def local_output_arg = local_output_path
         ? "--local-output-dir ${local_output_path}"
         : ''
-    def local_transform_name = local_transform_name
+    def local_transform_name_arg = local_transform_name
         ? "--local-transform-name ${local_transform_name}"
         : ''
-    def local_aligned_name = local_aligned_name
+    def local_aligned_name_arg = local_aligned_name
         ? "--local-aligned-name ${local_aligned_name}"
         : ''
     def mk_local_transform_path = get_mkdir_command(local_output_path, local_transform_name)
@@ -104,7 +104,7 @@ process BIGSTREAM {
     def mk_local_working_dir = params.local_working_path
         ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
         : ''
-    def local_working_dir = params.local_working_path
+    def local_working_dir_arg = params.local_working_path
         ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
         : ''
     def scheduler_arg = cluster_scheduler
@@ -125,16 +125,16 @@ process BIGSTREAM {
         ${global_fixed_args} \
         ${global_moving_args} \
         ${global_output_arg} \
-        ${global_transform_name} \
-        ${global_aligned_name} \
+        ${global_transform_name_arg} \
+        ${global_aligned_name_arg} \
         ${use_existing_global_transform} \
         ${local_steps_arg} \
         ${local_fixed_args} \
         ${local_moving_args} \
         ${local_output_arg} \
-        ${local_transform_name} \
-        ${local_aligned_name} \
-        ${local_working_dir} \
+        ${local_transform_name_arg} \
+        ${local_aligned_name_arg} \
+        ${local_working_dir_arg} \
         --partition-blocksize ${params.local_partitionsize} \
         --partition-overlap ${params.local_partition_overlap} \
         --output-chunk-size ${params.local_blocksize} \
