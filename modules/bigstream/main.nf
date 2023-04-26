@@ -69,15 +69,14 @@ process BIGSTREAM {
     def global_output_arg = global_output_path
         ? "--global-output-dir ${global_output_path}"
         : ''
-    def mk_global_output = global_output_path
-        ? "mkdir -p ${global_output_path}"
-        : ''
     def global_transform_name = global_transform_name
         ? "--global-transform-name ${global_transform_name}"
         : ''
     def global_aligned_name = global_aligned_name
         ? "--global-aligned-name ${global_aligned_name}"
         : ''
+    def mk_global_transform_path = get_mkdir_command(global_output_path, global_transform_name)
+    def mk_global_aligned_path = get_mkdir_command(global_output_path, global_aligned_name)
     def local_steps_arg = local_steps
         ? "--local-registration-steps ${local_steps}"
         : ''
@@ -90,15 +89,15 @@ process BIGSTREAM {
     def local_output_arg = local_output_path
         ? "--local-output-dir ${local_output_path}"
         : ''
-    def mk_local_output = local_output_path
-        ? "mkdir -p ${local_output_path}"
-        : ''
     def local_transform_name = local_transform_name
         ? "--local-transform-name ${local_transform_name}"
         : ''
     def local_aligned_name = local_aligned_name
         ? "--local-aligned-name ${local_aligned_name}"
         : ''
+    def mk_local_transform_path = get_mkdir_command(local_output_path, local_transform_name)
+    def mk_local_aligned_path = get_mkdir_command(local_output_path, local_aligned_name)
+
     def use_existing_global_transform = global_use_existing_transform
         ? '--use-existing-global-transform'
         : ''
@@ -116,8 +115,10 @@ process BIGSTREAM {
         : ''
     """
     umask 0002
-    ${mk_global_output}
-    ${mk_local_output}
+    ${mk_global_transform_path}
+    ${mk_global_aligned_path}
+    ${mk_local_transform_path}
+    ${mk_local_aligned_path}
     ${mk_local_working_dir}
     python /app/bigstream/scripts/main_align_pipeline.py \
         ${global_steps_arg} \
@@ -162,4 +163,17 @@ process BIGSTREAM {
         ${scheduler_arg} \
         ${dask_config_arg}
     """
+}
+
+def get_mkdir_command(dirname, fname) {
+    if (dirname && fname) {
+        def fullpath = new File(dirname, fname)
+        "mkdir -p ${file(fullpath).parent}"
+    } else if (dirname) {
+        "mkdir -p ${file(dirname)}"
+    } else if (fname && file(fname).parent != null) {
+        "mkdir -p ${file(fname).parent}"
+    } else {
+        ''
+    }
 }
