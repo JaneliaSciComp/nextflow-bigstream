@@ -1,9 +1,9 @@
 include {
-    dask_params
+    dask_params;
 } from './dask_params'
 
 include {
-    bigstream_params
+    bigstream_params;
 } from './bigstream_params'
 
 def input_params() {
