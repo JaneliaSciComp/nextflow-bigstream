@@ -72,11 +72,11 @@ process BIGSTREAM {
     def mk_global_output = global_output_path
         ? "mkdir -p ${global_output_path}"
         : ''
-    def global_transform_name = params.global_transform_name
-        ? "--global-transform-name ${params.global_transform_name}"
+    def global_transform_name = global_transform_name
+        ? "--global-transform-name ${global_transform_name}"
         : ''
-    def global_aligned_name = params.global_aligned_name
-        ? "--global-aligned-name ${params.global_aligned_name}"
+    def global_aligned_name = global_aligned_name
+        ? "--global-aligned-name ${global_aligned_name}"
         : ''
     def local_steps_arg = local_steps
         ? "--local-registration-steps ${local_steps}"
@@ -93,11 +93,11 @@ process BIGSTREAM {
     def mk_local_output = local_output_path
         ? "mkdir -p ${local_output_path}"
         : ''
-    def local_transform_name = params.local_transform_name
-        ? "--local-transform-name ${params.local_transform_name}"
+    def local_transform_name = local_transform_name
+        ? "--local-transform-name ${local_transform_name}"
         : ''
-    def local_aligned_name = params.local_aligned_name
-        ? "--local-aligned-name ${params.local_aligned_name}"
+    def local_aligned_name = local_aligned_name
+        ? "--local-aligned-name ${local_aligned_name}"
         : ''
     def use_existing_global_transform = global_use_existing_transform
         ? '--use-existing-global-transform'
