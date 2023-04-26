@@ -21,11 +21,11 @@ workflow START_CLUSTER {
                                             cluster_output_paths)
         accessible_paths.subscribe { log.debug "Cluster paths: $it" }
         cluster = CREATE_DASK_CLUSTER(
-            file(params.work_dir),
+            file(params.dask_work_dir),
             accessible_paths
         )
     } else {
-        cluster = Channel.of(['', '', params.work_dir, -1]).combine(cluster_input_paths.ifEmpty(''))
+        cluster = Channel.of(['', '', params.dask_work_dir, -1]).combine(cluster_input_paths.ifEmpty(''))
         | map {
             def (cluster_id, cluster_scheduler_ip, cluster_work_dir, cluster_workers) = it
             [
