@@ -135,6 +135,7 @@ process BIGSTREAM {
         ${local_aligned_name} \
         ${local_working_dir} \
         --partition-blocksize ${params.local_partitionsize} \
+        --partition-overlap ${params.local_partition_overlap} \
         --output-chunk-size ${params.local_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
         --global-ransac-num-sigma-max ${params.global_ransac_num_sigma_max} \

@@ -140,6 +140,11 @@ def _define_args(global_descriptor, local_descriptor):
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
+    args_parser.add_argument('--partition-overlap',
+                             dest='partition_overlap',
+                             default=0.5,
+                             type=float,
+                             help='partition overlap when splitting the work - a fractional number between 0 - 1')
     args_parser.add_argument('--local-transform-name',
                              dest='local_transform_name',
                              default='deform-transform',
@@ -439,6 +444,10 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         else:
             cluster = local_cluster(config=dask_config)
 
+        partition_overlap = (0.5 if (args.partition_overlap <= 0 or 
+                                     args.partition_overlap >= 1)
+                                 else
+                                    args.partition_overlap) 
         _align_local_data(
             fix_highres_ldata,
             mov_highres_ldata,
@@ -446,6 +455,7 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
             mov_highres_attrs,
             steps,
             args.partition_blocksize,
+            partition_overlap,
             [global_transform] if global_transform is not None else [],
             output_dir,
             args.local_transform_name,
@@ -466,6 +476,7 @@ def _align_local_data(fix_data,
                       mov_attrs,
                       steps,
                       partitionsize,
+                      overlap,
                       global_transforms_list,
                       output_dir,
                       highres_transform_name,
@@ -505,6 +516,7 @@ def _align_local_data(fix_data,
         steps,
         partitionsize,
         output_blocks,
+        overlap=overlap,
         static_transform_list=global_transforms_list,
         output_transform=deform_transform_dataset,
         write_group_interval=write_group_interval,
