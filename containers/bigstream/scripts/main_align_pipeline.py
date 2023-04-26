@@ -188,6 +188,16 @@ def _define_ransac_args(ransac_args, args):
                              type=int,
                              default=12,
                              help='Ransac radius')
+    ransac_args.add_argument(args._argflag('ransac-nspots'),
+                             dest=args._argdest('nspots'),
+                             type=int,
+                             default=5000,
+                             help='Ransac nspots')
+    ransac_args.add_argument(args._argflag('ransac-diagonal-constraint'),
+                             dest=args._argdest('diagonal_constraint'),
+                             type=float,
+                             default=0.75,
+                             help='Ransac diagonal constraint')
     ransac_args.add_argument(args._argflag('ransac-match-threshold'),
                              dest=args._argdest('match_threshold'),
                              type=float,
@@ -258,6 +268,12 @@ def _extract_ransac_args(args, argdescriptor):
     if _check_attr(args, argdescriptor, 'cc_radius'):
         ransac_args['cc_radius'] = getattr(
             args, argdescriptor._argdest('cc_radius'))
+    if _check_attr(args, argdescriptor, 'nspots'):
+        ransac_args['nspots'] = getattr(
+            args, argdescriptor._argdest('nspots'))
+    if _check_attr(args, argdescriptor, 'diagonal_constraint'):
+        ransac_args['diagonal_constraint'] = getattr(
+            args, argdescriptor._argdest('diagonal_constraint'))
     if _check_attr(args, argdescriptor, 'match_threshold'):
         ransac_args['match_threshold'] = getattr(
             args, argdescriptor._argdest('match_threshold'))

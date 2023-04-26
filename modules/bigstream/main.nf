@@ -139,6 +139,8 @@ process BIGSTREAM {
         --global-shrink-factors ${params.global_shrink_factors} \
         --global-ransac-num-sigma-max ${params.global_ransac_num_sigma_max} \
         --global-ransac-cc-radius ${params.global_ransac_cc_radius} \
+        --global-ransac-nspots ${params.global_ransac_nspots} \
+        --global-ransac-diagonal-constraint ${params.global_ransac_diagonal_constraint} \
         --global-ransac-match-threshold ${params.global_ransac_match_threshold} \
         --global-ransac-align-threshold ${params.global_ransac_align_threshold} \
         --global-ransac-blob-sizes ${params.global_ransac_blob_sizes} \
@@ -147,6 +149,8 @@ process BIGSTREAM {
         --global-iterations ${params.global_iterations} \
         --local-ransac-num-sigma-max ${params.local_ransac_num_sigma_max} \
         --local-ransac-cc-radius ${params.local_ransac_cc_radius} \
+        --local-ransac-nspots ${params.local_ransac_nspots} \
+        --local-ransac-diagonal-constraint ${params.local_ransac_diagonal_constraint} \
         --local-ransac-match-threshold ${params.local_ransac_match_threshold} \
         --local-ransac-align-threshold ${params.local_ransac_align_threshold} \
         --local-ransac-blob-sizes ${params.local_ransac_blob_sizes} \

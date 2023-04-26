@@ -2,19 +2,13 @@ def bigstream_params() {
     [
         bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.0',
         dask_config: '',
-        // global alignment (low res) parameters
-        global_fixed_path: '',
-        global_fixed_subpath: 'lowres',
-        global_moving_path: '',
-        global_moving_subpath: 'lowres',
-        global_output_path: '',
-        global_transform_name: 'affine.mat',
-        global_aligned_name: '',
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
         global_blocksize: 128, // output block size for global volume
         global_ransac_num_sigma_max: 15,
         global_ransac_cc_radius: 12,
+        global_ransac_nspots: 5000,
+        global_ransac_diagonal_constraint: 0.75,
         global_ransac_match_threshold: 0.9,
         global_ransac_align_threshold: 2.5,
         global_ransac_blob_sizes: '6,20',
@@ -26,21 +20,15 @@ def bigstream_params() {
         // global volume computation resources
         bigstream_global_cpus: 1,
         bigstream_global_mem_gb: 2,
-        // local alignment (high res) parameters
-        local_fixed_path: '',
-        local_fixed_subpath: 'highres',
-        local_moving_path: '',
-        local_moving_subpath: 'highres',
-        local_output_path: '',
         local_working_path: '',
-        local_transform_name: '',
-        local_aligned_name: '',
         local_steps: '', // use ransac,deform to align the chunked volume
         local_partitionsize: 128, // processing blocksize for parallelization
         local_blocksize: 128,  // output block (chunk) size for zarr or N5 arrays
         local_write_group_interval: 30,
         local_ransac_num_sigma_max: 15,
         local_ransac_cc_radius: 12,
+        local_ransac_nspots: 5000,
+        local_ransac_diagonal_constraint: 0.75,
         local_ransac_match_threshold: 0.9,
         local_ransac_align_threshold: 2.5,
         local_ransac_blob_sizes: '6,20',
