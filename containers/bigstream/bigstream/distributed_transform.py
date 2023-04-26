@@ -178,7 +178,7 @@ def _transform_single_block(block_coords,
     """
     Block transform function
     """
-    print('Transform block: ', block_coords, flush=True)
+    print('Transform block: ', block_coords)
 
     # fetch fixed image slices and read fix
     fix_slices = block_coords.item()

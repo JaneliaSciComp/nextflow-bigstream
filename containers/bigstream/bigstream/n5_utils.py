@@ -8,7 +8,7 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype,
     try:
         n5_store = zarr.N5Store(n5_path)
         if n5_subpath:
-            print('Create dataset', n5_path, n5_subpath, flush=True)
+            print('Create dataset', n5_path, n5_subpath)
             n5_root = zarr.open_group(store=n5_store, mode='a')
             dataset = n5_root.require_dataset(
                 n5_subpath,
@@ -20,7 +20,7 @@ def create_dataset(n5_path, n5_subpath, shape, chunks, dtype,
             dataset.attrs.update(**kwargs)
             return dataset
         else:
-            print('Create root array', n5_path, flush=True)
+            print('Create root array', n5_path)
             return zarr.open(store=n5_store, mode='a',
                              shape=shape, chunks=chunks)
     except Exception as e:

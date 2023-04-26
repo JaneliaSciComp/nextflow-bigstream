@@ -505,7 +505,7 @@ def random_affine_search(
         scores[iii] = score_affine(ut.physical_parameters_to_affine_matrix(ppp, center))
         if print_running_improvements and scores[iii] < current_best_score:
                 current_best_score = scores[iii]
-                print(iii, ': ', current_best_score, '\n', ppp, flush=True)
+                print(iii, ': ', current_best_score, '\n', ppp)
     sys.stdout.flush()
 
     # return top results
@@ -1000,7 +1000,7 @@ def alignment_pipeline(
     # loop over steps
     initial_transform_count = len(static_transform_list)
     for alignment, arguments in steps:
-        print('Run', alignment, arguments, flush=True)
+        print('Run', alignment, arguments)
         arguments = {**kwargs, **arguments}
         arguments['static_transform_list'] = static_transform_list
         static_transform_list.append(align[alignment](**arguments))

@@ -1,7 +1,7 @@
 import os
-import tempfile
 import numpy as np
 import bigstream.utility as ut
+import tempfile
 import time
 import traceback
 
@@ -147,8 +147,8 @@ def _align_single_block(block_index,
 
         print('Completed alignment for block', block_index)
     except Exception as e:
-        print('Alignment pipeline failed for block', block_index, e)
-        traceback.print_exc(e)
+        print('Alignment pipeline failed for block', block_index,
+              traceback.format_exception(e))
         return
 
     try:
@@ -212,11 +212,12 @@ def _align_single_block(block_index,
             write_group = np.sum(np.array(block_index) % 3 * (9, 3, 1))
             while not (write_group < time.time() / write_group_interval % 27 < write_group + .5):
                 time.sleep(1)
-            print('Write results for block', block_index, 'at', block_coords)
+            print('Write results for block', block_index,
+                  'at', block_coords)
             result_transform[block_coords] += transform
     except Exception as e:
         print('Balancing weights failed for', block_index, block_coords,
-              traceback.format_exc())
+              traceback.format_exception(e))
 
     return transform
 
@@ -377,8 +378,8 @@ def distributed_alignment_pipeline(
         prefix='.',
         dir=temporary_directory or os.getcwd(),
     )
-    print('Run distributed alignment using working dir:', temporary_directory,
-          flush=True)
+    print('Run distributed alignment using working dir:',
+          temporary_directory)
     fix_zarr_path = temporary_directory.name + '/fix.zarr'
     mov_zarr_path = temporary_directory.name + '/mov.zarr'
     fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
@@ -446,7 +447,7 @@ def distributed_alignment_pipeline(
     # establish all keyword arguments
     steps = [(a, {**kwargs, **b}) for a, b in steps]
 
-    print('Submit alignment for', len(indices), 'bocks', flush=True)
+    print('Submit alignment for', len(indices), 'bocks')
     align_blocks_args = [_create_single_block_align_args_from_index(
         block_info,
         partition_dims,
@@ -460,7 +461,7 @@ def distributed_alignment_pipeline(
         write_group_interval
     ) for block_info in indices]
 
-    print('Align', len(align_blocks_args), 'blocks', flush=True)
+    print('Align', len(align_blocks_args), 'blocks')
     futures = cluster.client.map(
         _align_single_block,
         *list(zip(*align_blocks_args)),  # transpose arguments
@@ -476,7 +477,8 @@ def distributed_alignment_pipeline(
                 iii = future_keys.index(future.key)
                 result_block_info = indices[iii]
                 result_transform[result_block_info[1]] += result
-                print('Completed block: ', result_block_info[0], flush=True)
+                print('Completed block: ', result_block_info[0],
+                      flush=True)
 
         return result_transform
     else:
@@ -484,6 +486,7 @@ def distributed_alignment_pipeline(
             for future, result in batch:
                 iii = future_keys.index(future.key)
                 result_block_info = indices[iii]
-                print('Returned result for block: ', result_block_info[0], flush=True)
+                print('Returned result for block: ', result_block_info[0],
+                      flush=True)
 
         return output_transform
