@@ -35,6 +35,8 @@ process TRANSFORM_COORDS {
 
     output:
     tuple val(input_coords), val(warped_coords),
+          val(pixel_resolution), val(downsampling_factors),
+          val(input_coords_volume), val(input_coords_dataset),
           val(cluster_scheduler), val(cluster_workdir)
 
     script:
