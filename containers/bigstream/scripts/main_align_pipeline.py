@@ -420,7 +420,7 @@ def _align_lowres_data(fix_data,
     return affine, aligned
 
 
-def _run_highres_alignment(args, steps, global_transform, output_dir, working_dir):
+def _run_local_alignment(args, steps, global_transform, output_dir, working_dir):
     if steps:
         print('Run local registration with:', steps, flush=True)
 
@@ -449,8 +449,8 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
                                  else
                                     args.partition_overlap) 
         _align_local_data(
-            fix_highres_ldata,
-            mov_highres_ldata,
+            (fix_highres_path, args.fixed_local_subpath, fix_highres_ldata),
+            (mov_highres_path, args.moving_local_subpath, mov_highres_ldata),
             fix_highres_attrs,
             mov_highres_attrs,
             steps,
@@ -460,7 +460,6 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
             output_dir,
             args.local_transform_name,
             args.local_aligned_name,
-            args.moving_local_subpath,
             args.output_chunk_size,
             args.local_write_group_interval,
             cluster,
@@ -470,8 +469,8 @@ def _run_highres_alignment(args, steps, global_transform, output_dir, working_di
         print('Skip local alignment because no local steps were specified.')
 
 
-def _align_local_data(fix_data,
-                      mov_data,
+def _align_local_data(fix_input,
+                      mov_input,
                       fix_attrs,
                       mov_attrs,
                       steps,
@@ -479,39 +478,47 @@ def _align_local_data(fix_data,
                       overlap,
                       global_transforms_list,
                       output_dir,
-                      highres_transform_name,
-                      highres_aligned_name,
-                      highres_subpath,
+                      local_transform_name,
+                      local_aligned_name,
                       output_chunk_size,
                       write_group_interval,
                       cluster,
                       working_dir):
+    fix_path, fix_dataset, fix_dataarray = fix_input
+    mov_path, mov_dataset, mov_dataarray = mov_input
+
     print('Run high res alignment:', steps, partitionsize, flush=True)
-    output_blocks = (output_chunk_size,) * fix_data.ndim
+    output_blocks = (output_chunk_size,) * fix_dataarray.ndim
 
     fix_spacing = n5_utils.get_voxel_spacing(fix_attrs)
     mov_spacing = n5_utils.get_voxel_spacing(mov_attrs)
 
     print('Align moving data',
-          mov_data.shape, mov_spacing,
+          mov_path, mov_dataset, mov_dataarray.shape, mov_spacing,
           'to reference',
-          fix_data.shape, fix_spacing,
+          fix_path, fix_dataset, fix_dataarray.shape, fix_spacing,
           flush=True)
 
-    if output_dir and highres_transform_name:
+    if output_dir and local_transform_name:
+        deform_path = output_dir + '/' + local_transform_name
         deform_transform_dataset = n5_utils.create_dataset(
-            output_dir + '/' + highres_transform_name,
+            deform_path,
             None, # no dataset subpath
-            fix_data.shape + (fix_data.ndim,),
-            output_blocks + (fix_data.ndim,),
+            fix_dataarray.shape + (fix_dataarray.ndim,),
+            output_blocks + (fix_dataarray.ndim,),
             np.float32,
             # the transformation does not have to have spacing attributes
         )
     else:
+        deform_path = None
         deform_transform_dataset = None
-    print('Calculate transformation for local alignment', flush=True)
+    print('Calculate transformation', deform_path, 'for local alignment of',
+          mov_path, mov_dataset,
+          'to reference',
+          fix_path, fix_dataset,
+          flush=True)
     deform = distributed_alignment_pipeline(
-        fix_data, mov_data,
+        fix_dataarray, mov_dataarray,
         fix_spacing, mov_spacing,
         steps,
         partitionsize,
@@ -521,33 +528,32 @@ def _align_local_data(fix_data,
         output_transform=deform_transform_dataset,
         write_group_interval=write_group_interval,
         cluster=cluster,
-        temporary_directory=working_dir,
     )
 
-    if output_dir and highres_aligned_name:
+    if output_dir and local_aligned_name:
         # Apply local transformation only if 
         # highres aligned output name is set
-        aligned_dataset_name = output_dir + '/' + highres_aligned_name
+        aligned_path = output_dir + '/' + local_aligned_name
         aligned_dataset = n5_utils.create_dataset(
-            aligned_dataset_name,
-            highres_subpath,
-            fix_data.shape,
+            aligned_path,
+            mov_dataset,
+            fix_dataarray.shape,
             output_blocks,
-            fix_data.dtype,
+            fix_dataarray.dtype,
             pixelResolution=mov_attrs.get('pixelResolution'),
             downsamplingFactors=mov_attrs.get('downsamplingFactors'),
         )
-        print('Apply local transformation -> ', aligned_dataset_name,
+        print('Apply', deform_path, 'to',
+              mov_path, mov_dataset, '->', aligned_path, mov_dataset,
               flush=True)
         aligned = distributed_apply_transform(
-            fix_data, mov_data,
+            fix_dataarray, mov_dataarray,
             fix_spacing, mov_spacing,
             partitionsize,
             output_blocks,
             transform_list=global_transforms_list + [deform],
             aligned_dataset=aligned_dataset,
             cluster=cluster,
-            temporary_directory=working_dir,
         )
     else:
         aligned_dataset = None
@@ -589,7 +595,7 @@ if __name__ == '__main__':
     else:
         local_steps = []
 
-    _run_highres_alignment(
+    _run_local_alignment(
         args,
         local_steps,
         global_transform,

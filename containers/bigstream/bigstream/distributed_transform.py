@@ -21,7 +21,6 @@ def distributed_apply_transform(
     overlap_factor=0.5,
     aligned_dataset=None,
     transform_spacing=None,
-    temporary_directory=None,
     cluster=None,
     cluster_kwargs={},
     **kwargs,
@@ -69,10 +68,6 @@ def distributed_apply_transform(
         Spacing to be applied for each transform. If not set
         it uses the fixed spacing
 
-    temporary_directory : string (default: None)
-        A parent directory for temporary data written to disk during computation
-        If None then the current directory is used
-
     cluster : ClusterWrap.cluster object (default: None)
         Only set if you have constructed your own static cluster. The default behavior
         is to construct a cluster for the duration of this function, then close it
@@ -96,18 +91,9 @@ def distributed_apply_transform(
         Otherwise it returns a numpy array.
     """
 
-    # temporary file paths and ensure inputs are zarr
-    temporary_directory = tempfile.TemporaryDirectory(
-        prefix='.', dir=temporary_directory or os.getcwd(),
-    )
-    fix_zarr_path = temporary_directory.name + '/fix.zarr'
-    mov_zarr_path = temporary_directory.name + '/mov.zarr'
-    fix_zarr = ut.numpy_to_zarr(fix, output_chunk_size, fix_zarr_path)
-    mov_zarr = ut.numpy_to_zarr(mov, output_chunk_size, mov_zarr_path)
-
     # get overlap and number of blocks
-    partition_dims = np.array((partition_size,)*fix_zarr.ndim)
-    nblocks = np.ceil(np.array(fix_zarr.shape) / partition_dims).astype(int)
+    partition_dims = np.array((partition_size,)*fix.ndim)
+    nblocks = np.ceil(np.array(fix.shape) / partition_dims).astype(int)
     overlaps = np.round(partition_dims * overlap_factor).astype(int)
 
     # ensure there's a 1:1 correspondence between transform spacing 
@@ -131,7 +117,7 @@ def distributed_apply_transform(
         start = partition_dims * (i, j, k) - overlaps
         stop = start + partition_dims + 2 * overlaps
         start = np.maximum(0, start)
-        stop = np.minimum(fix_zarr.shape, stop)
+        stop = np.minimum(fix.shape, stop)
         block_coords = tuple(slice(x, y) for x, y in zip(start, stop))
         blocks_coords[i, j, k] = block_coords
     blocks_coords_arr = da.from_array(blocks_coords, 
@@ -140,21 +126,21 @@ def distributed_apply_transform(
     aligned = da.map_blocks(
         _transform_single_block,
         blocks_coords_arr,
-        fix=fix_zarr,
-        mov=mov_zarr,
+        fix=fix,
+        mov=mov,
         fix_spacing=fix_spacing,
         mov_spacing=mov_spacing,
         blocksize=partition_dims,
         blockoverlaps=overlaps,
         transform_list=transform_list,
         transform_spacing_list=transform_spacing_list,
-        dtype=fix_zarr.dtype,
+        dtype=fix.dtype,
         chunks=output_chunk_size,
         *kwargs
     )
 
     # crop to original size
-    aligned = aligned[tuple(slice(s) for s in fix_zarr.shape)]
+    aligned = aligned[tuple(slice(s) for s in fix.shape)]
 
     # return
     if aligned_dataset is not None:

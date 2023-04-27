@@ -262,11 +262,10 @@ def distributed_alignment_pipeline(
     mov_mask=None,
     foreground_percentage=0.5,
     static_transform_list=[],
-    cluster=None,
-    cluster_kwargs={},
-    temporary_directory=None,
     output_transform=None,
     write_group_interval=30,
+    cluster=None,
+    cluster_kwargs={},
     **kwargs,
 ):
     """
@@ -280,10 +279,10 @@ def distributed_alignment_pipeline(
 
     Parameters
     ----------
-    fix : ndarray
+    fix : ndarray (zarr.Array)
         the fixed image
 
-    mov : ndarray
+    mov : ndarray (zarr.Array)
         the moving image; `fix.shape` must equal `mov.shape`
         I.e. typically piecewise affine alignment is done after
         a global affine alignment wherein the moving image has
@@ -318,13 +317,13 @@ def distributed_alignment_pipeline(
     overlap : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
 
-    fix_mask : binary ndarray (default: None)
+    fix_mask : binary ndarray (zarr.Array) (default: None)
         A mask limiting metric evaluation region of the fixed image
         Assumed to have the same domain as the fixed image, though sampling
         can be different. I.e. the origin and span are the same (in physical
         units) but the number of voxels can be different.
 
-    mov_mask : binary ndarray (default: None)
+    mov_mask : binary ndarray (zarr.Array) (default: None)
         A mask limiting metric evaluation region of the moving image
         Assumed to have the same domain as the moving image, though sampling
         can be different. I.e. the origin and span are the same (in physical
@@ -335,6 +334,13 @@ def distributed_alignment_pipeline(
         Assumed to have the same domain as the fixed image, though sampling
         can be different. I.e. the origin and span are the same (in physical
         units) but the number of voxels can be different.
+
+    output_transform : ndarray (default: None)
+        Output transform
+
+    write_group_interval : float (default: 30.)
+        The time each of the 27 mutually exclusive write block groups have
+        each round to write finished data.
 
     cluster : ClusterWrap.cluster object (default: None)
         Only set if you have constructed your own static cluster. The default behavior
@@ -348,19 +354,6 @@ def distributed_alignment_pipeline(
         this will be ClusterWrap.local_cluster.
         This is how distribution parameters are specified.
 
-    temporary_directory : string (default: None)
-        Temporary files are created during alignment. The temporary files will be
-        in their own folder within the `temporary_directory`. The default is the
-        current directory. Temporary files are removed if the function completes
-        successfully.
-
-    output_transform : ndarray (default: None)
-        Output transform
-
-    write_group_interval : float (default: 30.)
-        The time each of the 27 mutually exclusive write block groups have
-        each round to write finished data.
-
     kwargs : any additional arguments
         Arguments that will apply to all alignment steps. These are overruled by
         arguments for specific steps e.g. `random_kwargs` etc.
@@ -373,39 +366,8 @@ def distributed_alignment_pipeline(
         the displacement vector.
     """
 
-    # temporary file paths and create zarr images
-    temporary_directory = tempfile.TemporaryDirectory(
-        prefix='.',
-        dir=temporary_directory or os.getcwd(),
-    )
-    print('Run distributed alignment using working dir:',
-          temporary_directory)
-    fix_zarr_path = temporary_directory.name + '/fix.zarr'
-    mov_zarr_path = temporary_directory.name + '/mov.zarr'
-    fix_mask_zarr_path = temporary_directory.name + '/fix_mask.zarr'
-    mov_mask_zarr_path = temporary_directory.name + '/mov_mask.zarr'
-    fix_zarr = ut.numpy_to_zarr(fix, output_blocks, fix_zarr_path)
-    mov_zarr = ut.numpy_to_zarr(mov, output_blocks, mov_zarr_path)
-    if fix_mask is not None:
-        fix_mask_zarr = ut.numpy_to_zarr(
-            fix_mask, output_blocks, fix_mask_zarr_path)
-    else:
-        fix_mask_zarr = None
-    if mov_mask is not None:
-        mov_mask_zarr = ut.numpy_to_zarr(
-            mov_mask, output_blocks, mov_mask_zarr_path)
-    else:
-        mov_mask_zarr = None
-
-    # zarr files for initial deformations
-    new_list = []
-    for iii, transform in enumerate(static_transform_list):
-        if transform.shape != (4, 4) and len(transform.shape) != 1:
-            path = temporary_directory.name + f'/deform{iii}.zarr'
-            transform = ut.numpy_to_zarr(
-                transform, output_blocks + (transform.shape[-1],), path)
-        new_list.append(transform)
-    static_transform_list = new_list
+    # there's no need to convert anything to a zarr array 
+    # since they are already zarr arrays
 
     # determine fixed image slices for blocking
     partition_dims = np.array((partition_size,)*fix.ndim)
@@ -452,9 +414,9 @@ def distributed_alignment_pipeline(
         block_info,
         partition_dims,
         overlaps,
-        fix_zarr, mov_zarr,
+        fix, mov,
         fix_spacing, mov_spacing,
-        fix_mask_zarr, mov_mask_zarr,
+        fix_mask, mov_mask,
         steps,
         static_transform_list,
         output_transform,

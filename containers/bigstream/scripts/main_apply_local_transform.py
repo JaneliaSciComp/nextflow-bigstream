@@ -125,6 +125,10 @@ def _run_apply_transform(args):
         else:
             affine_transforms_list = []
 
+        all_transforms = (args.affine_transformations +
+                          [(args.local_transform, args.local_transform_subpath)])
+        print('Apply', all_transforms,
+              args.moving, mov_subpath, '->', args.output, output_subpath)
         output = distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
@@ -133,7 +137,6 @@ def _run_apply_transform(args):
             transform_list=affine_transforms_list + [local_deform],
             aligned_dataset=output_dataset,
             cluster=cluster,
-            temporary_directory=args.working_dir,
         )
         return output
     else:
