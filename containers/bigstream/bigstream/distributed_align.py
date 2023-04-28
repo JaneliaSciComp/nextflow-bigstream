@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import bigstream.utility as ut
-import tempfile
 import time
 import traceback
 
@@ -431,24 +430,11 @@ def distributed_alignment_pipeline(
     )
     future_keys = [f.key for f in futures]
 
-    if output_transform is None:
-        # create result transform
-        result_transform = np.zeros(fix.shape + (fix.ndim,), dtype=np.float32)
-        for batch in as_completed(futures, with_results=True).batches():
-            for future, result in batch:
-                iii = future_keys.index(future.key)
-                result_block_info = indices[iii]
-                result_transform[result_block_info[1]] += result
-                print('Completed block: ', result_block_info[0],
-                      flush=True)
+    for batch in as_completed(futures, with_results=True).batches():
+        for future, _ in batch:
+            iii = future_keys.index(future.key)
+            result_block_info = indices[iii]
+            print('Completed block: ', result_block_info[0],
+                    flush=True)
 
-        return result_transform
-    else:
-        for batch in as_completed(futures, with_results=True).batches():
-            for future, result in batch:
-                iii = future_keys.index(future.key)
-                result_block_info = indices[iii]
-                print('Returned result for block: ', result_block_info[0],
-                      flush=True)
-
-        return output_transform
+    return output_transform

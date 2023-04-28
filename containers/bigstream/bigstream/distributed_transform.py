@@ -1,4 +1,3 @@
-import dask.array as da
 import numpy as np
 import os
 import tempfile
@@ -8,7 +7,7 @@ import bigstream.utility as ut
 
 from itertools import product
 from ClusterWrap.decorator import cluster
-from dask.utils import SerializableLock
+from dask.distributed import as_completed
 
 
 @cluster
@@ -19,7 +18,7 @@ def distributed_apply_transform(
     output_chunk_size,
     transform_list,
     overlap_factor=0.5,
-    aligned_dataset=None,
+    aligned_data=None,
     transform_spacing=None,
     cluster=None,
     cluster_kwargs={},
@@ -61,7 +60,7 @@ def distributed_apply_transform(
     overlap_factor : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
 
-    aligned_dataset : ndarray (default: None)
+    aligned_data : ndarray (default: None)
         A subpath in the zarr array to write the resampled data to
 
     transform_spacing : tuple
@@ -87,7 +86,7 @@ def distributed_apply_transform(
     -------
     resampled : array
         The resampled moving data with transform_list applied. 
-        If aligned_dataset is not None this will be the output
+        If aligned_data is not None this will be the output
         Otherwise it returns a numpy array.
     """
 
@@ -111,49 +110,64 @@ def distributed_apply_transform(
         # assume it's length matches transform list length
         transform_spacing_list = transform_spacing
 
-    # store block coordinates in a dask array
-    blocks_coords = np.empty(nblocks, dtype=list)
+    # prepare block coordinates
+    blocks_coords = []
     for (i, j, k) in np.ndindex(*nblocks):
         start = partition_dims * (i, j, k) - overlaps
         stop = start + partition_dims + 2 * overlaps
         start = np.maximum(0, start)
         stop = np.minimum(fix.shape, stop)
         block_coords = tuple(slice(x, y) for x, y in zip(start, stop))
-        blocks_coords[i, j, k] = block_coords
-    blocks_coords_arr = da.from_array(blocks_coords, 
-                                      chunks=(1,)*blocks_coords.ndim)
+        blocks_coords.append(block_coords)
+
+    print('Transform', len(blocks_coords), 'blocks',
+          'with partition size' ,partition_dims)
     # align all blocks
-    aligned = da.map_blocks(
+    futures = cluster.client.map(
         _transform_single_block,
-        blocks_coords_arr,
-        fix=fix,
-        mov=mov,
+        blocks_coords,
+        full_fix=fix,
+        full_mov=mov,
         fix_spacing=fix_spacing,
         mov_spacing=mov_spacing,
         blocksize=partition_dims,
         blockoverlaps=overlaps,
         transform_list=transform_list,
         transform_spacing_list=transform_spacing_list,
-        dtype=fix.dtype,
-        chunks=output_chunk_size,
         *kwargs
     )
 
-    # crop to original size
-    aligned = aligned[tuple(slice(s) for s in fix.shape)]
+    for batch in as_completed(futures, with_results=True).batches():
+        for future, result in batch:
+            finished_block_coords, aligned_block = result
 
+            print('Completed block:',
+                  finished_block_coords,
+                  flush=True)
+
+            if aligned_data is not None:
+                print('Update warped block:',
+                      finished_block_coords,
+                      '(', aligned_block.shape, ')',
+                      flush=True)
+                aligned_data[finished_block_coords] = aligned_block
+
+    # if aligned_data is not None:
+    #     # crop to original size
+    #     aligned_data = aligned_blocks[tuple(slice(s) for s in fix.shape)]
+    #     return aligned_data
+    # else:
+    #     return aligned_blocks.compute()
     # return
-    if aligned_dataset is not None:
-        lock = SerializableLock()
-        da.store(aligned, aligned_dataset, lock=lock)
-        return aligned_dataset
-    else:
-        return aligned.compute()
-
+    # if aligned_data is not None:
+    #     lock = SerializableLock()
+    #     da.store(aligned, aligned_dataset, lock=lock)
+    #     return aligned_dataset
+    
 
 def _transform_single_block(block_coords,
-                            fix=None,
-                            mov=None,
+                            full_fix=None,
+                            full_mov=None,
                             fix_spacing=None,
                             mov_spacing=None,
                             blocksize=None,
@@ -164,12 +178,14 @@ def _transform_single_block(block_coords,
     """
     Block transform function
     """
-    print('Transform block: ', block_coords)
-
+    print('Transform block: ', block_coords, flush=True)
     # fetch fixed image slices and read fix
-    fix_slices = block_coords.item()
-    fix_block = fix[fix_slices]
-    fix_origin = fix_spacing * [s.start for s in fix_slices]
+    fix_origin = fix_spacing * [s.start for s in block_coords]
+    print('Block coords:',block_coords , 
+          'Block origin:', fix_origin,
+          'Block size:', blocksize,
+          'Overlap:', blockoverlaps)
+    fix_block = full_fix[block_coords]
 
     # read relevant region of transforms
     applied_transform_list = []
@@ -177,7 +193,7 @@ def _transform_single_block(block_coords,
     for iii, transform in enumerate(transform_list):
         if transform.shape != (4, 4):
             start = np.floor(fix_origin / transform_spacing_list[iii]).astype(int)
-            stop = [s.stop for s in fix_slices] * fix_spacing / transform_spacing_list[iii]
+            stop = [s.stop for s in block_coords] * fix_spacing / transform_spacing_list[iii]
             stop = np.ceil(stop).astype(int)
             transform = transform[tuple(slice(a, b) for a, b in zip(start, stop))]
             transform_origin[iii] = start * transform_spacing_list[iii]
@@ -187,24 +203,39 @@ def _transform_single_block(block_coords,
     # transform fixed block corners, read moving data
     fix_block_coords = []
     for corner in list(product([0, 1], repeat=3)):
-        a = [x.stop-1 if y else x.start for x, y in zip(fix_slices, corner)]
+        a = [x.stop-1 if y else x.start for x, y in zip(block_coords, corner)]
         fix_block_coords.append(a)
     fix_block_coords = np.array(fix_block_coords) * fix_spacing
+
     mov_block_coords = cs_transform.apply_transform_to_coordinates(
-        fix_block_coords, applied_transform_list, transform_spacing_list, transform_origin,
+        fix_block_coords,
+        applied_transform_list,
+        transform_spacing_list,
+        transform_origin,
     )
+    print('Transformed moving block coords:', block_coords, 
+          fix_block_coords, '->', mov_block_coords,
+          flush=True)
+
     mov_block_coords = np.round(mov_block_coords / mov_spacing).astype(int)
     mov_block_coords = np.maximum(0, mov_block_coords)
-    mov_block_coords = np.minimum(mov.shape, mov_block_coords)
+    mov_block_coords = np.minimum(full_mov.shape, mov_block_coords)
+    print('Rounded transformed moving block coords:', block_coords, '->', mov_block_coords,
+          flush=True)
+
     mov_start = np.min(mov_block_coords, axis=0)
     mov_stop = np.max(mov_block_coords, axis=0)
     mov_slices = tuple(slice(a, b) for a, b in zip(mov_start, mov_stop))
-    mov_block = mov[mov_slices]
+    mov_block = full_mov[mov_slices]
     mov_origin = mov_spacing * [s.start for s in mov_slices]
+    print('Moving block origin:', fix_origin, '->', mov_origin,
+          flush=True)
+    print('Moving block coords:', block_coords, '->', mov_slices,
+          flush=True)
 
     # resample
-    aligned = cs_transform.apply_transform(
-        fix_block, mov_block, 
+    aligned_block = cs_transform.apply_transform(
+        fix_block, mov_block,
         fix_spacing, mov_spacing,
         transform_list=applied_transform_list,
         transform_origin=transform_origin,
@@ -212,23 +243,41 @@ def _transform_single_block(block_coords,
         mov_origin=mov_origin,
         **additional_transform_args,
     )
+    print('Warped block',
+          block_coords, '->', mov_slices,
+          'shape:', aligned_block.shape,
+          flush=True)
 
     # crop out overlap
-    for axis in range(aligned.ndim):
+    final_block_coords_list = []
+    for axis in range(aligned_block.ndim):
         # left side
-        slc = [slice(None),]*aligned.ndim
-        if fix_slices[axis].start != 0:
+        slc = [slice(None),]*aligned_block.ndim
+        start = block_coords[axis].start
+        stop = block_coords[axis].stop
+        if block_coords[axis].start != 0:
             slc[axis] = slice(blockoverlaps[axis], None)
-            aligned = aligned[tuple(slc)]
+            print('Crop axis', axis, 'left', 
+                  block_coords,'->',slc,
+                  flush=True)
+            aligned_block = aligned_block[tuple(slc)]
+            start = start+blockoverlaps[axis]
 
         # right side
-        slc = [slice(None),]*aligned.ndim
-        if aligned.shape[axis] > blocksize[axis]:
+        slc = [slice(None),]*aligned_block.ndim
+        if aligned_block.shape[axis] > blocksize[axis]:
             slc[axis] = slice(None, blocksize[axis])
-            aligned = aligned[tuple(slc)]
+            print('Crop axis', axis, 'right', block_coords,'->',slc,
+                  flush=True)
+            aligned_block = aligned_block[tuple(slc)]
+            stop = start + aligned_block.shape[axis]
 
+        final_block_coords_list.append(slice(start, stop))
+    # convert the coords to a tuple
+    final_block_coords = tuple(final_block_coords_list)
+    print('Aligned block coords:', block_coords, '->', final_block_coords)
     # return result
-    return aligned
+    return final_block_coords, aligned_block
 
 
 @cluster

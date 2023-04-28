@@ -362,7 +362,7 @@ def _run_global_alignment(args, steps, global_output_dir):
         print('Moving lowres volume attributes:',
               mov_arraydata.shape, mov_voxel_spacing, flush=True)
 
-        global_transform, global_alignment = _align_lowres_data(
+        global_transform, global_alignment = _align_global_data(
             fix_arraydata[...],  # read image in memory
             mov_arraydata[...],
             fix_voxel_spacing,
@@ -398,7 +398,7 @@ def _run_global_alignment(args, steps, global_output_dir):
     return global_transform
 
 
-def _align_lowres_data(fix_data,
+def _align_global_data(fix_data,
                        mov_data,
                        fix_spacing,
                        mov_spacing,
@@ -501,7 +501,7 @@ def _align_local_data(fix_input,
 
     if output_dir and local_transform_name:
         deform_path = output_dir + '/' + local_transform_name
-        deform_transform_dataset = n5_utils.create_dataset(
+        local_deform = n5_utils.create_dataset(
             deform_path,
             None, # no dataset subpath
             fix_dataarray.shape + (fix_dataarray.ndim,),
@@ -511,13 +511,13 @@ def _align_local_data(fix_input,
         )
     else:
         deform_path = None
-        deform_transform_dataset = None
+        local_deform = None
     print('Calculate transformation', deform_path, 'for local alignment of',
           mov_path, mov_dataset,
           'to reference',
           fix_path, fix_dataset,
           flush=True)
-    deform = distributed_alignment_pipeline(
+    distributed_alignment_pipeline(
         fix_dataarray, mov_dataarray,
         fix_spacing, mov_spacing,
         steps,
@@ -525,7 +525,7 @@ def _align_local_data(fix_input,
         output_blocks,
         overlap=overlap,
         static_transform_list=global_transforms_list,
-        output_transform=deform_transform_dataset,
+        output_transform=local_deform,
         write_group_interval=write_group_interval,
         cluster=cluster,
     )
@@ -534,7 +534,7 @@ def _align_local_data(fix_input,
         # Apply local transformation only if 
         # highres aligned output name is set
         aligned_path = output_dir + '/' + local_aligned_name
-        aligned_dataset = n5_utils.create_dataset(
+        local_aligned = n5_utils.create_dataset(
             aligned_path,
             mov_dataset,
             fix_dataarray.shape,
@@ -546,20 +546,20 @@ def _align_local_data(fix_input,
         print('Apply', deform_path, 'to',
               mov_path, mov_dataset, '->', aligned_path, mov_dataset,
               flush=True)
-        aligned = distributed_apply_transform(
+        distributed_apply_transform(
             fix_dataarray, mov_dataarray,
             fix_spacing, mov_spacing,
             partitionsize,
             output_blocks,
-            transform_list=global_transforms_list + [deform],
-            aligned_dataset=aligned_dataset,
+            overlap_factor=overlap,
+            transform_list=global_transforms_list + [local_deform],
+            aligned_data=local_aligned,
             cluster=cluster,
         )
     else:
-        aligned_dataset = None
-        aligned = None
+        local_aligned = None
 
-    return deform, aligned
+    return local_deform, local_aligned
 
 
 if __name__ == '__main__':

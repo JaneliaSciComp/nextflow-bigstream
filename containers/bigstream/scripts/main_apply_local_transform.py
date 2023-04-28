@@ -64,6 +64,11 @@ def _define_args():
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
+    args_parser.add_argument('--partition-overlap',
+                             dest='partition_overlap',
+                             default=0.5,
+                             type=float,
+                             help='partition overlap when splitting the work - a fractional number between 0 - 1')
 
     args_parser.add_argument('--dask-scheduler', dest='dask_scheduler',
                              type=str, default=None,
@@ -111,12 +116,14 @@ def _run_apply_transform(args):
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
 
     if args.output:
-        output_dataset = n5_utils.create_dataset(
+        output_dataarray = n5_utils.create_dataset(
             args.output,
             output_subpath,
             fix_data.shape,
             output_blocks,
             fix_data.dtype,
+            pixelResolution=mov_attrs.get('pixelResolution'),
+            downsamplingFactors=mov_attrs.get('downsamplingFactors'),
         )
 
         if args.affine_transformations:
@@ -129,16 +136,17 @@ def _run_apply_transform(args):
                           [(args.local_transform, args.local_transform_subpath)])
         print('Apply', all_transforms,
               args.moving, mov_subpath, '->', args.output, output_subpath)
-        output = distributed_apply_transform(
+        distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
             args.partition_blocksize,
             output_blocks,
+            overlap_factor=args.partition_overlap,
             transform_list=affine_transforms_list + [local_deform],
-            aligned_dataset=output_dataset,
+            aligned_data=output_dataarray,
             cluster=cluster,
         )
-        return output
+        return output_dataarray
     else:
         return None
 

@@ -62,6 +62,7 @@ process LOCAL_TRANSFORM {
     def dask_config_arg = params.dask_config
         ? "--dask-config ${normalized_file_name(params.dask_config)}"
         : ''
+
     """
     umask 0002
     mkdir -p ${parent_output}
@@ -78,6 +79,5 @@ process LOCAL_TRANSFORM {
         --partition-overlap ${params.local_partition_overlap} \
         ${scheduler_arg} \
         ${dask_config_arg}
-
     """
 }
