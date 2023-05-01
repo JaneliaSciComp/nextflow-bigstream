@@ -422,7 +422,7 @@ def distributed_invert_displacement_vector_field(
     spacing : 1d-array
         The physical voxel spacing of the displacement field
 
-    blocksize : iterable
+    blocksize : tuple
         The shape of blocks in voxels
 
     inv_vectorfield_array : zarr array
@@ -455,15 +455,16 @@ def distributed_invert_displacement_vector_field(
     """
 
     # get overlap and number of blocks
-    blocksize = np.array(blocksize)
-    overlap = np.round(blocksize * overlap_factor).astype(int)
-    nblocks = np.ceil(np.array(vectorfield_array.shape[:-1]) / blocksize).astype(int)
+    blocksize_array = np.array(blocksize)
+    overlap = np.round(blocksize_array * overlap_factor).astype(int)
+    nblocks = np.ceil(np.array(vectorfield_array.shape[:-1]) / 
+                      blocksize_array).astype(int)
 
     # store block coordinates in a dask array
     blocks_coords = []
     for (i, j, k) in np.ndindex(*nblocks):
-        start = blocksize * (i, j, k) - overlap
-        stop = start + blocksize + 2 * overlap
+        start = blocksize_array * (i, j, k) - overlap
+        stop = start + blocksize_array + 2 * overlap
         start = np.maximum(0, start)
         stop = np.minimum(vectorfield_array.shape[:-1], stop)
         coords = tuple(slice(x, y) for x, y in zip(start, stop))
@@ -475,7 +476,7 @@ def distributed_invert_displacement_vector_field(
         blocks_coords,
         full_vectorfield=vectorfield_array,
         spacing=spacing,
-        blocksize=blocksize,
+        blocksize=blocksize_array,
         blockoverlaps=overlap,
         iterations=iterations,
         order=order,

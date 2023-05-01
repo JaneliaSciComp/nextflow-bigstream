@@ -574,7 +574,7 @@ def _align_local_data(fix_input,
 
         distributed_invert_displacement_vector_field(
             local_deform,
-            None, # no spacing info
+            mov_spacing,
             output_blocks,
             local_inv_deform,
             overlap_factor=overlap_factor,
@@ -604,7 +604,7 @@ def _align_local_data(fix_input,
             fix_spacing, mov_spacing,
             partitionsize,
             output_blocks,
-            overlap_factor=overlap,
+            overlap_factor=overlap_factor,
             transform_list=global_transforms_list + [local_deform],
             aligned_data=local_aligned,
             cluster=cluster,

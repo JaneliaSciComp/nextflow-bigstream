@@ -365,8 +365,8 @@ def distributed_alignment_pipeline(
     # since they are already zarr arrays
 
     # determine fixed image slices for blocking
-    nblocks = np.ceil(np.array(fix.shape) / blocksize).astype(int)
     blocksize_array = np.array(blocksize)
+    nblocks = np.ceil(np.array(fix.shape) / blocksize_array).astype(int)
     overlaps = np.round(blocksize_array * overlap_factor).astype(int)
     indices, slices = [], []
     for (i, j, k) in np.ndindex(*nblocks):
