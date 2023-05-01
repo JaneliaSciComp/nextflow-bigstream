@@ -370,16 +370,16 @@ def distributed_alignment_pipeline(
     overlaps = np.round(blocksize_array * overlap_factor).astype(int)
     indices, slices = [], []
     for (i, j, k) in np.ndindex(*nblocks):
-        start = blocksize * (i, j, k) - overlaps
-        stop = start + blocksize + 2 * overlaps
+        start = blocksize_array * (i, j, k) - overlaps
+        stop = start + blocksize_array + 2 * overlaps
         start = np.maximum(0, start)
         stop = np.minimum(fix.shape, stop)
         coords = tuple(slice(x, y) for x, y in zip(start, stop))
 
         foreground = True
         if fix_mask is not None:
-            start = blocksize * (i, j, k)
-            stop = start + blocksize
+            start = blocksize_array * (i, j, k)
+            stop = start + blocksize_array
             ratio = np.array(fix_mask.shape) / fix.shape
             start = np.round(ratio * start).astype(int)
             stop = np.round(ratio * stop).astype(int)
@@ -407,7 +407,7 @@ def distributed_alignment_pipeline(
     print('Submit alignment for', len(indices), 'bocks')
     align_blocks_args = [_create_single_block_align_args_from_index(
         block_info,
-        blocksize,
+        blocksize_array,
         overlaps,
         fix, mov,
         fix_spacing, mov_spacing,
