@@ -64,8 +64,8 @@ def _define_args():
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
-    args_parser.add_argument('--partition-overlap',
-                             dest='partition_overlap',
+    args_parser.add_argument('--overlap-factor',
+                             dest='overlap_factor',
                              default=0.5,
                              type=float,
                              help='partition overlap when splitting the work - a fractional number between 0 - 1')
@@ -141,7 +141,7 @@ def _run_apply_transform(args):
             fix_voxel_spacing, mov_voxel_spacing,
             args.partition_blocksize,
             output_blocks,
-            overlap_factor=args.partition_overlap,
+            overlap_factor=args.overlap_factor,
             transform_list=affine_transforms_list + [local_deform],
             aligned_data=output_dataarray,
             cluster=cluster,

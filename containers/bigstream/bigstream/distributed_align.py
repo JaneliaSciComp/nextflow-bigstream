@@ -254,9 +254,8 @@ def distributed_alignment_pipeline(
     fix_spacing,
     mov_spacing,
     steps,
-    partition_size,
-    output_blocks,
-    overlap=0.5,
+    blocksize,
+    overlap_factor=0.5,
     fix_mask=None,
     mov_mask=None,
     foreground_percentage=0.5,
@@ -307,13 +306,10 @@ def distributed_alignment_pipeline(
         Arguments specified here override any global arguments given through kwargs
         for their specific step only.
 
-    partition_size : int
+    blocksize : tuple
         Partition or block size for distributing the work
 
-    output_blocks: tuple
-        Output chunk size
-
-    overlap : float in range [0, 1] (default: 0.5)
+    overlap_factor : float in range [0, 1] (default: 0.5)
         Block overlap size as a percentage of block size
 
     fix_mask : binary ndarray (zarr.Array) (default: None)
@@ -369,21 +365,20 @@ def distributed_alignment_pipeline(
     # since they are already zarr arrays
 
     # determine fixed image slices for blocking
-    partition_dims = np.array((partition_size,)*fix.ndim)
-    nblocks = np.ceil(np.array(fix.shape) / partition_dims).astype(int)
-    overlaps = np.round(partition_dims * overlap).astype(int)
+    nblocks = np.ceil(np.array(fix.shape) / blocksize).astype(int)
+    overlaps = np.round(blocksize * overlap_factor).astype(int)
     indices, slices = [], []
     for (i, j, k) in np.ndindex(*nblocks):
-        start = partition_dims * (i, j, k) - overlaps
-        stop = start + partition_dims + 2 * overlaps
+        start = blocksize * (i, j, k) - overlaps
+        stop = start + blocksize + 2 * overlaps
         start = np.maximum(0, start)
         stop = np.minimum(fix.shape, stop)
         coords = tuple(slice(x, y) for x, y in zip(start, stop))
 
         foreground = True
         if fix_mask is not None:
-            start = partition_dims * (i, j, k)
-            stop = start + partition_dims
+            start = blocksize * (i, j, k)
+            stop = start + blocksize
             ratio = np.array(fix_mask.shape) / fix.shape
             start = np.round(ratio * start).astype(int)
             stop = np.round(ratio * stop).astype(int)
@@ -411,7 +406,7 @@ def distributed_alignment_pipeline(
     print('Submit alignment for', len(indices), 'bocks')
     align_blocks_args = [_create_single_block_align_args_from_index(
         block_info,
-        partition_dims,
+        blocksize,
         overlaps,
         fix, mov,
         fix_spacing, mov_spacing,

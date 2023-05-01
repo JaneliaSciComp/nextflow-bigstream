@@ -9,7 +9,8 @@ from ClusterWrap.clusters import (local_cluster, remote_cluster)
 from bigstream.align import alignment_pipeline
 from bigstream.transform import apply_transform
 from bigstream.distributed_align import distributed_alignment_pipeline
-from bigstream.distributed_transform import distributed_apply_transform
+from bigstream.distributed_transform import (distributed_apply_transform,
+    distributed_invert_displacement_vector_field)
 
 
 def _inttuple(arg):
@@ -140,8 +141,8 @@ def _define_args(global_descriptor, local_descriptor):
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
-    args_parser.add_argument('--partition-overlap',
-                             dest='partition_overlap',
+    args_parser.add_argument('--overlap-factor',
+                             dest='overlap_factor',
                              default=0.5,
                              type=float,
                              help='partition overlap when splitting the work - a fractional number between 0 - 1')
@@ -150,6 +151,11 @@ def _define_args(global_descriptor, local_descriptor):
                              default='deform-transform',
                              type=str,
                              help='Local transform name')
+    args_parser.add_argument('--local-inv-transform-name',
+                             dest='local_inv_transform_name',
+                             default='inv-deform-transform',
+                             type=str,
+                             help='Local inverse transform name')
     args_parser.add_argument('--local-aligned-name',
                              dest='local_aligned_name',
                              type=str,
@@ -159,6 +165,21 @@ def _define_args(global_descriptor, local_descriptor):
                              default=30,
                              type=int,
                              help="Write group interval for distributed processed blocks")
+    args_parser.add_argument('--inv-iterations',
+                             dest='inv_iterations',
+                             default=10,
+                             type=int,
+                             help="Number of iterations for getting the inverse transformation")
+    args_parser.add_argument('--inv-order',
+                             dest='inv_order',
+                             default=2,
+                             type=int,
+                             help="Order value for the inverse transformation")
+    args_parser.add_argument('--inv-sqrt-iterations',
+                             dest='inv_sqrt_iterations',
+                             default=10,
+                             type=int,
+                             help="Number of square root iterations for getting the inverse transformation")
 
     _define_ransac_args(args_parser.add_argument_group(
         description='Local ransac arguments'),
@@ -444,10 +465,10 @@ def _run_local_alignment(args, steps, global_transform, output_dir, working_dir)
         else:
             cluster = local_cluster(config=dask_config)
 
-        partition_overlap = (0.5 if (args.partition_overlap <= 0 or 
-                                     args.partition_overlap >= 1)
+        overlap_factor = (0.5 if (args.overlap_factor <= 0 or
+                                    args.overlap_factor >= 1)
                                  else
-                                    args.partition_overlap) 
+                                    args.overlap_factor)
         _align_local_data(
             (fix_highres_path, args.fixed_local_subpath, fix_highres_ldata),
             (mov_highres_path, args.moving_local_subpath, mov_highres_ldata),
@@ -455,15 +476,18 @@ def _run_local_alignment(args, steps, global_transform, output_dir, working_dir)
             mov_highres_attrs,
             steps,
             args.partition_blocksize,
-            partition_overlap,
+            overlap_factor,
             [global_transform] if global_transform is not None else [],
             output_dir,
             args.local_transform_name,
+            args.local_inv_transform_name,
             args.local_aligned_name,
             args.output_chunk_size,
             args.local_write_group_interval,
+            args.inv_iterations,
+            args.inv_order,
+            args.inv_sqrt_iterations,
             cluster,
-            working_dir,
         )
     else:
         print('Skip local alignment because no local steps were specified.')
@@ -475,15 +499,18 @@ def _align_local_data(fix_input,
                       mov_attrs,
                       steps,
                       partitionsize,
-                      overlap,
+                      overlap_factor,
                       global_transforms_list,
                       output_dir,
                       local_transform_name,
+                      local_inv_transform_name,
                       local_aligned_name,
                       output_chunk_size,
                       write_group_interval,
-                      cluster,
-                      working_dir):
+                      inv_iterations,
+                      inv_order,
+                      inv_sqrt_iterations,
+                      cluster):
     fix_path, fix_dataset, fix_dataarray = fix_input
     mov_path, mov_dataset, mov_dataarray = mov_input
 
@@ -521,14 +548,40 @@ def _align_local_data(fix_input,
         fix_dataarray, mov_dataarray,
         fix_spacing, mov_spacing,
         steps,
-        partitionsize,
         output_blocks,
-        overlap=overlap,
+        overlap_factor=overlap_factor,
         static_transform_list=global_transforms_list,
         output_transform=local_deform,
         write_group_interval=write_group_interval,
         cluster=cluster,
     )
+    if deform_path and local_inv_transform_name:
+        inv_deform_path = output_dir + '/' + local_inv_transform_name
+        local_inv_deform = n5_utils.create_dataset(
+            inv_deform_path,
+            None, # no dataset subpath
+            fix_dataarray.shape + (fix_dataarray.ndim,),
+            output_blocks + (fix_dataarray.ndim,),
+            np.float32,
+            # the transformation does not have to have spacing attributes
+        )
+        print('Calculate inverse transformation',
+              deform_path, 'for local alignment of',
+              mov_path, mov_dataset,
+              'to reference',
+              fix_path, fix_dataset,
+              flush=True)
+
+        distributed_invert_displacement_vector_field(
+            local_deform,
+            None, # no spacing info
+            output_blocks,
+            local_inv_deform,
+            overlap_factor=overlap_factor,
+            iterations=inv_iterations,
+            order=inv_order,
+            sqrt_iterations=inv_sqrt_iterations,
+        )
 
     if output_dir and local_aligned_name:
         # Apply local transformation only if 

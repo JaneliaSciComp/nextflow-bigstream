@@ -32,6 +32,7 @@ workflow {
                         final_params.local_steps,
                         final_params.local_output_path,
                         final_params.local_transform_name,
+                        final_params.local_inv_transform_name,
                         final_params.local_aligned_name,
                     ]),
                 deform_input,

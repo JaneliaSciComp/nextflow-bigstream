@@ -138,7 +138,7 @@ def distributed_apply_transform(
     )
 
     for batch in as_completed(futures, with_results=True).batches():
-        for future, result in batch:
+        for _, result in batch:
             finished_block_coords, aligned_block = result
 
             print('Completed block:',
@@ -151,18 +151,6 @@ def distributed_apply_transform(
                       '(', aligned_block.shape, ')',
                       flush=True)
                 aligned_data[finished_block_coords] = aligned_block
-
-    # if aligned_data is not None:
-    #     # crop to original size
-    #     aligned_data = aligned_blocks[tuple(slice(s) for s in fix.shape)]
-    #     return aligned_data
-    # else:
-    #     return aligned_blocks.compute()
-    # return
-    # if aligned_data is not None:
-    #     lock = SerializableLock()
-    #     da.store(aligned, aligned_dataset, lock=lock)
-    #     return aligned_dataset
     
 
 def _transform_single_block(block_coords,
@@ -287,7 +275,6 @@ def distributed_apply_transform_to_coordinates(
     partition_size=30.,
     coords_spacing=None,
     coords_origin=None,
-    temporary_directory=None,
     cluster=None,
     cluster_kwargs={},
 ):
@@ -324,10 +311,6 @@ def distributed_apply_transform_to_coordinates(
         the same logic as transform_spacing. Origins given for affine transforms
         are ignored.
 
-    temporary_directory : string (default: None)
-        A parent directory for temporary data written to disk during computation
-        If None then the current directory is used
-
     cluster : ClusterWrap.cluster object (default: None)
         Only set if you have constructed your own static cluster. The default behavior
         is to construct a cluster for the duration of this function, then close it
@@ -345,11 +328,6 @@ def distributed_apply_transform_to_coordinates(
     transformed_coordinates : Nxd array
         The given coordinates transformed by the given transform_list
     """
-
-    # temporary file paths and ensure inputs are zarr
-    temporary_directory = tempfile.TemporaryDirectory(
-        prefix='.', dir=temporary_directory or os.getcwd(),
-    )
 
     # determine partitions of coordinates
     origin = np.min(coordinates[:, 0:3], axis=0)
@@ -418,3 +396,151 @@ def _transform_coords(coord_indexed_values, coords_spacing, transform_list):
         warped_coords_indexed_values[:, 0:3] = warped_point_coords
         warped_coords_indexed_values[:, 3:] = points_values
         return warped_coords_indexed_values
+
+
+@cluster
+def distributed_invert_displacement_vector_field(
+    vectorfield_array,
+    spacing,
+    blocksize,
+    inv_vectorfield_array,
+    overlap_factor=0.25,
+    iterations=10,
+    order=2,
+    sqrt_iterations=5,
+    cluster=None,
+    cluster_kwargs={},
+):
+    """
+    Numerically find the inverse of a larger-than-memory displacement vector field
+
+    Parameters
+    ----------
+    vectorfield_array : zarr array
+        The displacement vector field to invert
+
+    spacing : 1d-array
+        The physical voxel spacing of the displacement field
+
+    blocksize : iterable
+        The shape of blocks in voxels
+
+    inv_vectorfield_array : zarr array
+        The inverse vector field
+
+    overlap_factor : overlap factor (default: 0.25)
+
+    iterations : scalar int (default: 10)
+        The number of stationary point iterations to find inverse. More
+        iterations gives a more accurate inverse but takes more time.
+
+    order : scalar int (default: 2)
+        The number of roots to take before stationary point iterations.
+
+    sqrt_iterations : scalar int (default: 5)
+        The number of iterations to find the field composition square root.
+
+    cluster : ClusterWrap.cluster object (default: None)
+        Only set if you have constructed your own static cluster. The default behavior
+        is to construct a cluster for the duration of this function, then close it
+        when the function is finished.
+
+    cluster_kwargs : dict (default: {})
+        Arguments passed to ClusterWrap.cluster
+        If working with an LSF cluster, this will be
+        ClusterWrap.janelia_lsf_cluster. If on a workstation
+        this will be ClusterWrap.local_cluster.
+        This is how distribution parameters are specified.
+
+    """
+
+    # get overlap and number of blocks
+    blocksize = np.array(blocksize)
+    overlap = np.round(blocksize * overlap_factor).astype(int)
+    nblocks = np.ceil(np.array(vectorfield_array.shape[:-1]) / blocksize).astype(int)
+
+    # store block coordinates in a dask array
+    blocks_coords = []
+    for (i, j, k) in np.ndindex(*nblocks):
+        start = blocksize * (i, j, k) - overlap
+        stop = start + blocksize + 2 * overlap
+        start = np.maximum(0, start)
+        stop = np.minimum(vectorfield_array.shape[:-1], stop)
+        coords = tuple(slice(x, y) for x, y in zip(start, stop))
+        blocks_coords.append(coords)
+
+    # invert all blocks
+    futures = cluster.client.map(
+        _invert_block,
+        blocks_coords,
+        full_vectorfield=vectorfield_array,
+        spacing=spacing,
+        blocksize=blocksize,
+        blockoverlaps=overlap,
+        iterations=iterations,
+        order=order,
+        sqrt_iterations=sqrt_iterations,
+    )
+
+    for batch in as_completed(futures, with_results=True).batches():
+        for _, result in batch:
+            inverse_block_coords, inverse_block = result
+
+            print('Completed block:',
+                  inverse_block_coords,
+                  flush=True)
+
+            if inv_vectorfield_array is not None:
+                print('Update inverse block:',
+                      inverse_block_coords,
+                      '(', inverse_block.shape, ')',
+                      flush=True)
+                inv_vectorfield_array[inverse_block_coords] = inverse_block
+
+
+def _invert_block(block_coords,
+                  full_vectorfield=None,
+                  spacing=None,
+                  blocksize=None,
+                  blockoverlaps=None,
+                  iterations=10,
+                  order=2,
+                  sqrt_iterations=5):
+    """
+    Invert block function
+    """
+    print('Invert block:', block_coords)
+
+    block_vectorfield = full_vectorfield[block_coords]
+    inverse_block = cs_transform.invert_displacement_vector_field(
+        block_vectorfield, spacing, iterations, order, sqrt_iterations,
+    )
+
+    print('Computed inverse field for block', 
+          block_coords, block_vectorfield.shape,
+          '->',
+          inverse_block.shape)
+    # crop out overlap
+    inverse_block_coords_list = []
+    for axis in range(inverse_block.ndim - 1):
+        # left side
+        slc = [slice(None),]*(inverse_block.ndim - 1)
+        start = block_coords[axis].start
+        stop = block_coords[axis].stop
+        if block_coords[axis].start != 0:
+            slc[axis] = slice(blockoverlaps[axis], None)
+            inverse_block = inverse_block[tuple(slc)]
+            start = start+blockoverlaps[axis]
+
+        # right side
+        slc = [slice(None),]*(inverse_block.ndim - 1)
+        if inverse_block.shape[axis] > blocksize[axis]:
+            slc[axis] = slice(None, blocksize[axis])
+            inverse_block = inverse_block[tuple(slc)]
+            stop = start + inverse_block.shape[axis]
+
+        inverse_block_coords_list.append(slice(start, stop))
+
+    inverse_block_coords = tuple(inverse_block_coords_list)
+    # return result
+    return inverse_block_coords, inverse_block

@@ -36,6 +36,7 @@ workflow BIGSTREAM_REGISTRATION {
                        //  local_steps,
                        //  local_output,
                        //  local_transform_name,
+                       //  local_inv_transform_name,
                        //  local_aligned_name]
     deform_input       // [[volume_path, volume_dataset, warped_vol_output_path],...] - the list of additional volumes that must be warped
 
@@ -55,6 +56,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name) = ri
         [
             index,
@@ -69,6 +71,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_steps,
             local_output,
             local_transform_name,
+            local_inv_transform_name,
             local_aligned_name,
         ]
     }
@@ -89,6 +92,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              deform_inputs) = it
 
@@ -131,6 +135,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_steps,
             normalized_local_output,
             local_transform_name,
+            local_inv_transform_name,
             local_aligned_name,
             normalized_deform_inputs
         ]
@@ -149,6 +154,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name) = it
         def r = [
             global_fixed, global_fixed_dataset,
@@ -182,6 +188,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name) = it
         def r = [
             local_fixed, local_fixed_dataset,
@@ -189,6 +196,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_steps,
             local_output,
             local_transform_name,
+            local_inv_transform_name,
             local_aligned_name,
             global_output,
             global_transform_name,
@@ -205,6 +213,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              global_output,
              global_transform_name) = it
@@ -253,6 +262,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              deform_inputs) = it
         [
@@ -260,6 +270,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_moving, local_moving_dataset,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              global_output,
              global_transform_name,
@@ -272,6 +283,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_moving, local_moving_dataset,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              global_output,
              global_transform_name,
@@ -289,6 +301,7 @@ workflow BIGSTREAM_REGISTRATION {
                 vol_output, vol_subpath,
                 "${global_output}/${global_transform_name}",
                 "${local_output}/${local_transform_name}", ''/* empty_local_transform_subpath */,
+                "${local_output}/${local_inv_transform_name}", ''/* empty_local_inv_transform_subpath */,
             ]
             def current_cluster_info = [cluster_scheduler, cluster_workdir]
             log.debug "Local transform inputs: $r, $current_cluster_info"
@@ -342,6 +355,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_steps,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              deform_inputs) = it
         [
@@ -349,6 +363,7 @@ workflow BIGSTREAM_REGISTRATION {
              local_moving, local_moving_dataset,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name,
              global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
@@ -364,6 +379,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_moving, local_moving_dataset,
             local_output,
             local_transform_name,
+            local_inv_transform_name,
             local_aligned_name,
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
@@ -382,6 +398,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_moving, local_moving_dataset,
             local_output,
             local_transform_name,
+            local_inv_transform_name,
             local_aligned_name,
             deformed_results,
         ]

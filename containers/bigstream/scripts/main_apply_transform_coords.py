@@ -153,8 +153,8 @@ def _run_apply_transform(args):
             partition_size=args.partition_size,
             coords_spacing=voxel_spacing,
             cluster=cluster,
-            temporary_directory=args.working_dir,
         )
+
         np.savetxt(args.output_coords, warped_coords, delimiter=',')
         return args.output_coords
     else:

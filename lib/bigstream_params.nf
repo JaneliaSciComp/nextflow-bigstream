@@ -23,7 +23,7 @@ def bigstream_params() {
         local_working_path: '',
         local_steps: '', // use ransac,deform to align the chunked volume
         local_partitionsize: 128, // processing blocksize for parallelization
-        local_partition_overlap: 0.5,
+        local_overlap_overlap: 0.5,
         local_blocksize: 128,  // output block (chunk) size for zarr or N5 arrays
         local_write_group_interval: 30,
         local_ransac_num_sigma_max: 15,
@@ -39,6 +39,9 @@ def bigstream_params() {
         local_learning_rate: 0.25,
         local_min_step: 0,
         local_iterations: 25,
+        inv_iterations: 10,
+        inv_order: 2,
+        inv_sqrt_iterations: 10,
         // chunked volume computation resources
         bigstream_local_cpus: 1,
         bigstream_local_mem_gb: 2,

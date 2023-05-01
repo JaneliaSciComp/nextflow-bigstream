@@ -23,6 +23,7 @@ def input_params() {
         local_moving_subpath: 'highres',
         local_output_path: '',
         local_transform_name: '',
+        local_inv_transform_name: '',
         local_aligned_name: '',
     ]
 }

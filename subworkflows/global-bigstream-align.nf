@@ -42,6 +42,7 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
             '', // local_steps
             '', // local_output
             '', // local_transform_name,
+            '', // local_inv_transform_name
             '', // local_aligned_name,
         ]
     }
@@ -66,6 +67,7 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
              local_moving, local_moving_dataset,
              local_output,
              local_transform_name,
+             local_inv_transform_name,
              local_aligned_name) = it
         [
             global_fixed, global_fixed_dataset,
