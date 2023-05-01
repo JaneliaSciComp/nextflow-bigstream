@@ -366,7 +366,8 @@ def distributed_alignment_pipeline(
 
     # determine fixed image slices for blocking
     nblocks = np.ceil(np.array(fix.shape) / blocksize).astype(int)
-    overlaps = np.round(blocksize * overlap_factor).astype(int)
+    blocksize_array = np.array(blocksize)
+    overlaps = np.round(blocksize_array * overlap_factor).astype(int)
     indices, slices = [], []
     for (i, j, k) in np.ndindex(*nblocks):
         start = blocksize * (i, j, k) - overlaps
