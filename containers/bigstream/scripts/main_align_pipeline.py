@@ -141,8 +141,8 @@ def _define_args(global_descriptor, local_descriptor):
                              dest='local_registration_steps',
                              type=_stringlist,
                              help='Local (highres) registration steps, .e.g. ransac,deform')
-    args_parser.add_argument('--partition-blocksize',
-                             dest='partition_blocksize',
+    args_parser.add_argument('--blocks-partitionsize',
+                             dest='blocks_partitionsize',
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
@@ -497,7 +497,7 @@ def _run_local_alignment(args, steps, global_transform, output_dir, working_dir)
             fix_highres_attrs,
             mov_highres_attrs,
             steps,
-            args.partition_blocksize,
+            args.blocks_partitionsize,
             overlap_factor,
             [global_transform] if global_transform is not None else [],
             output_dir,
@@ -536,8 +536,9 @@ def _align_local_data(fix_input,
     fix_path, fix_dataset, fix_dataarray = fix_input
     mov_path, mov_dataset, mov_dataarray = mov_input
 
-    print('Run high res alignment:', steps, partitionsize, flush=True)
-    output_blocks = (output_chunk_size,) * fix_dataarray.ndim
+    print('Run local alignment:', steps, partitionsize, flush=True)
+    output_blocks_chunksize = (output_chunk_size,) * fix_dataarray.ndim
+    blocks_partitionsize = (partitionsize,) * fix_dataarray.ndim
 
     fix_spacing = n5_utils.get_voxel_spacing(fix_attrs)
     mov_spacing = n5_utils.get_voxel_spacing(mov_attrs)
@@ -554,7 +555,7 @@ def _align_local_data(fix_input,
             deform_path,
             None, # no dataset subpath
             fix_dataarray.shape + (fix_dataarray.ndim,),
-            output_blocks + (fix_dataarray.ndim,),
+            output_blocks_chunksize + (fix_dataarray.ndim,),
             np.float32,
             # the transformation does not have to have spacing attributes
         )
@@ -570,7 +571,7 @@ def _align_local_data(fix_input,
         fix_dataarray, mov_dataarray,
         fix_spacing, mov_spacing,
         steps,
-        output_blocks,
+        blocks_partitionsize,
         overlap_factor=overlap_factor,
         static_transform_list=global_transforms_list,
         output_transform=local_deform,
@@ -583,7 +584,7 @@ def _align_local_data(fix_input,
             inv_deform_path,
             None, # no dataset subpath
             fix_dataarray.shape + (fix_dataarray.ndim,),
-            output_blocks + (fix_dataarray.ndim,),
+            output_blocks_chunksize + (fix_dataarray.ndim,),
             np.float32,
             # the transformation does not have to have spacing attributes
         )
@@ -597,7 +598,7 @@ def _align_local_data(fix_input,
         distributed_invert_displacement_vector_field(
             local_deform,
             fix_spacing,
-            output_blocks,
+            blocks_partitionsize,
             local_inv_deform,
             overlap_factor=overlap_factor,
             iterations=inv_iterations,
@@ -614,7 +615,7 @@ def _align_local_data(fix_input,
             aligned_path,
             mov_dataset,
             fix_dataarray.shape,
-            output_blocks,
+            output_blocks_chunksize,
             fix_dataarray.dtype,
             pixelResolution=mov_attrs.get('pixelResolution'),
             downsamplingFactors=mov_attrs.get('downsamplingFactors'),
@@ -625,8 +626,7 @@ def _align_local_data(fix_input,
         distributed_apply_transform(
             fix_dataarray, mov_dataarray,
             fix_spacing, mov_spacing,
-            partitionsize,
-            output_blocks,
+            blocks_partitionsize,
             overlap_factor=overlap_factor,
             transform_list=global_transforms_list + [local_deform],
             aligned_data=local_aligned,

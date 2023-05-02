@@ -59,8 +59,8 @@ def _define_args():
                              dest='working_dir',
                              help='Working directory')
 
-    args_parser.add_argument('--partition-blocksize',
-                             dest='partition_blocksize',
+    args_parser.add_argument('--blocks-partitionsize',
+                             dest='blocks_partitionsize',
                              default=128,
                              type=int,
                              help='blocksize for splitting the work')
@@ -114,6 +114,7 @@ def _run_apply_transform(args):
                                     args.local_transform_subpath)
 
     output_blocks = (args.output_chunk_size,) * fix_data.ndim
+    blocks_partitionsize = (args.blocks_partitionsize,) * fix_data.ndim
 
     if args.output:
         output_dataarray = n5_utils.create_dataset(
@@ -139,8 +140,7 @@ def _run_apply_transform(args):
         distributed_apply_transform(
             fix_data, mov_data,
             fix_voxel_spacing, mov_voxel_spacing,
-            args.partition_blocksize,
-            output_blocks,
+            blocks_partitionsize,
             overlap_factor=args.overlap_factor,
             transform_list=affine_transforms_list + [local_deform],
             aligned_data=output_dataarray,

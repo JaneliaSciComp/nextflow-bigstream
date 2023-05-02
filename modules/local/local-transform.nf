@@ -75,7 +75,7 @@ process LOCAL_TRANSFORM {
         ${local_transform_arg} ${local_transform_subpath_arg} \
         ${working_dir_arg} \
         --output-chunk-size ${params.local_blocksize} \
-        --partition-blocksize ${params.local_partitionsize} \
+        --blocks-partitionsize ${params.local_partitionsize} \
         --overlap-factor ${params.local_overlap_factor} \
         ${scheduler_arg} \
         ${dask_config_arg}

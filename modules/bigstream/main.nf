@@ -143,7 +143,7 @@ process BIGSTREAM {
         ${local_inv_transform_name_arg} \
         ${local_aligned_name_arg} \
         ${local_working_dir_arg} \
-        --partition-blocksize ${params.local_partitionsize} \
+        --blocks-partitionsize ${params.local_partitionsize} \
         --overlap-factor ${params.local_overlap_factor} \
         --output-chunk-size ${params.local_blocksize} \
         --global-shrink-factors ${params.global_shrink_factors} \
