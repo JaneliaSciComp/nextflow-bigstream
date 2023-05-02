@@ -13,11 +13,12 @@ RUN git clone https://github.com/GFleishman/ClusterWrap.git .
 WORKDIR /app/bigstream
 
 # install bigstream
-ENV BIGSTREAM_TAG=1.0
+ENV BIGSTREAM_TAG=master
 RUN git clone --branch $BIGSTREAM_TAG --depth 1 https://github.com/JaneliaSciComp/bigstream.git .
 
 COPY env.yaml .
-RUN echo "Remove test data from the container" && rm -rf resources
+# Remove the data and the git repo to reduce space
+RUN echo "Remove test data from the container" && rm -rf resources && rm -rf .git
 
 # Use the base environment from the baseImage
 RUN mamba env update -n base -f env.yaml

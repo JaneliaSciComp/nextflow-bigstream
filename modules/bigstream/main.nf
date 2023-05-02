@@ -63,10 +63,10 @@ process BIGSTREAM {
         ? "--global-registration-steps ${global_steps}"
         : ''
     def global_fixed_args = global_fixed_path
-        ? "--fixed-lowres ${global_fixed_path} --fixed-lowres-subpath ${global_fixed_subpath}"
+        ? "--fixed-global ${global_fixed_path} --fixed-global-subpath ${global_fixed_subpath}"
         : ''
     def global_moving_args = global_moving_path
-        ? "--moving-lowres ${global_moving_path} --moving-lowres-subpath ${global_moving_subpath}"
+        ? "--moving-global ${global_moving_path} --moving-global-subpath ${global_moving_subpath}"
         : ''
     def global_output_arg = global_output_path
         ? "--global-output-dir ${global_output_path}"
@@ -83,10 +83,10 @@ process BIGSTREAM {
         ? "--local-registration-steps ${local_steps}"
         : ''
     def local_fixed_args = local_fixed_path
-        ? "--fixed-highres ${local_fixed_path} --fixed-highres-subpath ${local_fixed_subpath}"
+        ? "--fixed-local ${local_fixed_path} --fixed-local-subpath ${local_fixed_subpath}"
         : ''
     def local_moving_args = local_moving_path
-        ? "--moving-highres ${local_moving_path} --moving-highres-subpath ${local_moving_subpath}"
+        ? "--moving-local ${local_moving_path} --moving-local-subpath ${local_moving_subpath}"
         : ''
     def local_output_arg = local_output_path
         ? "--local-output-dir ${local_output_path}"
