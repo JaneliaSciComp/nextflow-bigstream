@@ -12,14 +12,13 @@ RUN git clone https://github.com/GFleishman/ClusterWrap.git .
 
 WORKDIR /app/bigstream
 
+# install bigstream
+RUN git clone https://github.com/JaneliaSciComp/bigstream.git .
+
 COPY env.yaml .
-COPY setup.py .
 
 # Use the base environment from the baseImage
 RUN mamba env update -n base -f env.yaml
-
-COPY scripts scripts
-COPY bigstream bigstream
 
 RUN cd /app/clusterlib \
  && pip install . \
