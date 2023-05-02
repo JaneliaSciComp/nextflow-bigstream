@@ -277,7 +277,7 @@ workflow BIGSTREAM_REGISTRATION {
              deform_inputs
         ]
     }
-    | join(local_alignment_results, by:[0,1,2,3,4,5,6,7,8])
+    | join(local_alignment_results, by:[0,1,2,3,4,5,6,7,8,9])
     | flatMap {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
@@ -301,7 +301,7 @@ workflow BIGSTREAM_REGISTRATION {
                 vol_output, vol_subpath,
                 "${global_output}/${global_transform_name}",
                 "${local_output}/${local_transform_name}", ''/* empty_local_transform_subpath */,
-                "${local_output}/${local_inv_transform_name}", ''/* empty_local_inv_transform_subpath */,
+                // only apply direct deformation
             ]
             def current_cluster_info = [cluster_scheduler, cluster_workdir]
             log.debug "Local transform inputs: $r, $current_cluster_info"
