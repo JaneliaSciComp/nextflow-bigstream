@@ -566,12 +566,12 @@ def _align_local_data(fix_input,
             # the transformation does not have to have spacing attributes
         )
         print('Calculate inverse transformation',
-              deform_path, 'for local alignment of',
+              inv_deform_path, 'from', deform_path,
+              'for local alignment of',
               mov_path, mov_dataset,
               'to reference',
               fix_path, fix_dataset,
               flush=True)
-
         distributed_invert_displacement_vector_field(
             local_deform,
             mov_spacing,
@@ -581,6 +581,7 @@ def _align_local_data(fix_input,
             iterations=inv_iterations,
             order=inv_order,
             sqrt_iterations=inv_sqrt_iterations,
+            cluster=cluster,
         )
 
     if output_dir and local_aligned_name:
