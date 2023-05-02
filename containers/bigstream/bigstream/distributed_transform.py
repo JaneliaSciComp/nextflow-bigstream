@@ -543,5 +543,9 @@ def _invert_block(block_coords,
         inverse_block_coords_list.append(slice(start, stop))
 
     inverse_block_coords = tuple(inverse_block_coords_list)
+    print('Completed inverse vector field for block', 
+          block_coords, block_vectorfield.shape,
+          '->',
+          inverse_block_coords, inverse_block.shape)
     # return result
     return inverse_block_coords, inverse_block
