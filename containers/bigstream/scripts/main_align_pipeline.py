@@ -120,6 +120,11 @@ def _define_args(global_descriptor, local_descriptor):
                              default='affine-transform.mat',
                              type=str,
                              help='Global transform name')
+    args_parser.add_argument('--global-inv-transform-name',
+                             dest='global_inv_transform_name',
+                             default='inv-affine-transform.mat',
+                             type=str,
+                             help='Inverse global transform name')
     args_parser.add_argument('--global-aligned-name',
                              dest='global_aligned_name',
                              type=str,
@@ -357,11 +362,20 @@ def _extract_working_dir(args, argdescriptor):
 
 
 def _run_global_alignment(args, steps, global_output_dir):
-    if global_output_dir and args.global_transform_name:
-        global_transform_file = (global_output_dir + '/' + 
-                                 args.global_transform_name)
+    if global_output_dir: 
+        if args.global_transform_name:
+            global_transform_file = (global_output_dir + '/' + 
+                                    args.global_transform_name)
+        else:
+            global_transform_file = None
+        if args.global_inv_transform_name:
+            global_inv_transform_file = (global_output_dir + '/' + 
+                                         args.global_inv_transform_name)
+        else:
+            global_inv_transform_file = None
     else:
         global_transform_file = None
+        global_inv_transform_file = None
 
     if (args.use_existing_global_transform and
         global_transform_file and
@@ -391,15 +405,23 @@ def _run_global_alignment(args, steps, global_output_dir):
             steps)
 
         if global_transform_file:
-            print('Save lowres transformation to', global_transform_file)
+            print('Save global transformation to', global_transform_file)
             np.savetxt(global_transform_file, global_transform)
         else:
-            print('Skip saving lowres transformation')
+            print('Skip saving global transformation')
+
+        if global_inv_transform_file:
+            try:
+                global_inv_transform = np.linalg.inv(global_transform)
+                print('Save global inverse transformation to', global_inv_transform_file)
+                np.savetxt(global_inv_transform_file, global_inv_transform)
+            except Exception:
+                print('Global transformation', global_transform, 'is not invertible')
 
         if global_output_dir and args.global_aligned_name:
             global_aligned_file = (global_output_dir + '/' + 
                                    args.global_aligned_name)
-            print('Save lowres aligned volume to', global_aligned_file)
+            print('Save global aligned volume to', global_aligned_file)
             n5_utils.create_dataset(
                 global_aligned_file,
                 args.moving_global_subpath, # same dataset as the moving image
@@ -574,7 +596,7 @@ def _align_local_data(fix_input,
               flush=True)
         distributed_invert_displacement_vector_field(
             local_deform,
-            mov_spacing,
+            fix_spacing,
             output_blocks,
             local_inv_deform,
             overlap_factor=overlap_factor,
