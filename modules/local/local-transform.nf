@@ -74,7 +74,7 @@ process LOCAL_TRANSFORM {
         ${affine_transforms_arg} \
         ${local_transform_arg} ${local_transform_subpath_arg} \
         ${working_dir_arg} \
-        --output-chunk-size ${params.local_blocksize} \
+        --output-blocksize ${params.local_blocksize} \
         --blocks-partitionsize ${params.local_partitionsize} \
         --overlap-factor ${params.local_overlap_factor} \
         ${scheduler_arg} \

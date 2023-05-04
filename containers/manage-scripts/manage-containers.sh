@@ -1,15 +1,12 @@
-PLATFORM="--platform=linux/x86_64"
-
 helpmsg="$0
-    build
-    push
-    pushTags <containers>
-    help
+    build|push|--help
 "
 
 RUNNER=
 
 TAG=registry.int.janelia.org/multifish/bigstream-dask:1.0
+
+additional_args=()
 
 while [[ $# > 0 ]]; do
     key="$1"
@@ -32,15 +29,18 @@ while [[ $# > 0 ]]; do
        -n)
             RUNNER=echo
             ;;
-       *)
+       --help|-h)
             echo ${helpmsg}
             exit 1
+            ;;
+        *)
+            additional_args=($additional_args $key)
             ;;
     esac
 done
 
-
 $RUNNER docker ${COMMAND} \
        ${PLATFORM_ARG} \
        ${TAG_ARG} \
-       ${CONTAINERS_DIR_ARG}
+       ${CONTAINERS_DIR_ARG} \
+       ${additional_args[@]}

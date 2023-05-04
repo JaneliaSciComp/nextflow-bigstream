@@ -94,8 +94,14 @@ process BIGSTREAM {
     def local_transform_name_arg = local_transform_name
         ? "--local-transform-name ${local_transform_name}"
         : ''
+    def local_transform_blocksize_arg = params.local_transform_blocksize
+        ? "--local-transform-blocksize ${params.local_transform_blocksize}"
+        : ''
     def local_inv_transform_name_arg = local_inv_transform_name
         ? "--local-inv-transform-name ${local_inv_transform_name}"
+        : ''
+    def local_inv_transform_blocksize_arg = params.local_inv_transform_blocksize
+        ? "--local-inv-transform-blocksize ${params.local_inv_transform_blocksize}"
         : ''
     def local_aligned_name_arg = local_aligned_name
         ? "--local-aligned-name ${local_aligned_name}"
@@ -145,7 +151,9 @@ process BIGSTREAM {
         ${local_working_dir_arg} \
         --blocks-partitionsize ${params.local_partitionsize} \
         --overlap-factor ${params.local_overlap_factor} \
-        --output-chunk-size ${params.local_blocksize} \
+        --output-blocksize ${params.local_blocksize} \
+        ${local_transform_blocksize_arg} \
+        ${local_inv_transform_blocksize_arg} \
         --global-shrink-factors ${params.global_shrink_factors} \
         --global-ransac-num-sigma-max ${params.global_ransac_num_sigma_max} \
         --global-ransac-cc-radius ${params.global_ransac_cc_radius} \
