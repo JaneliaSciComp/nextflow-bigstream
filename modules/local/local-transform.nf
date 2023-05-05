@@ -12,7 +12,6 @@ process LOCAL_TRANSFORM {
         parentfile(output_path, 1),
         parentfile(global_transform, 1),
         parentfile(local_transform, 1),
-        parentfile(params.local_working_path, 2),
         parentfile(params.dask_config, 1)]) }
 
     memory { "${mem_gb} GB" }
@@ -50,12 +49,6 @@ process LOCAL_TRANSFORM {
         ? "--local-transform-subpath ${local_transform_subpath}"
         : ''
 
-    def mk_working_dir = params.local_working_path
-        ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
-        : ''
-    def working_dir_arg = params.local_working_path
-        ? "--working-dir ${normalized_file_name(params.local_working_path)}"
-        : ''
     def scheduler_arg = cluster_scheduler
         ? "--dask-scheduler ${cluster_scheduler}"
         : ''
@@ -66,17 +59,14 @@ process LOCAL_TRANSFORM {
     """
     umask 0002
     mkdir -p ${parent_output}
-    ${mk_working_dir}
     python /app/bigstream/scripts/main_apply_local_transform.py \
         --fixed ${fixed_path} --fixed-subpath ${fixed_subpath} \
         --moving ${moving_path} --moving-subpath ${moving_subpath} \
         --output ${output_path} ${output_subpath_arg} \
         ${affine_transforms_arg} \
         ${local_transform_arg} ${local_transform_subpath_arg} \
-        ${working_dir_arg} \
         --output-blocksize ${params.local_blocksize} \
-        --blocks-partitionsize ${params.local_partitionsize} \
-        --overlap-factor ${params.local_overlap_factor} \
+        --blocks-overlap-factor ${params.local_overlap_factor} \
         ${scheduler_arg} \
         ${dask_config_arg}
     """

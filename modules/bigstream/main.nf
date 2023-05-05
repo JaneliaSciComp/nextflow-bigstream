@@ -13,7 +13,6 @@ process BIGSTREAM {
         local_moving_path,
         parentfile(global_output_path, 2),
         parentfile(local_output_path, 2),
-        parentfile(params.local_working_path, 2),
         parentfile(params.dask_config, 1),
     ]) }
 
@@ -113,12 +112,6 @@ process BIGSTREAM {
     def use_existing_global_transform = global_use_existing_transform
         ? '--use-existing-global-transform'
         : ''
-    def mk_local_working_dir = params.local_working_path
-        ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
-        : ''
-    def local_working_dir_arg = params.local_working_path
-        ? "--local-working-dir ${normalized_file_name(params.local_working_path)}"
-        : ''
     def scheduler_arg = cluster_scheduler
         ? "--dask-scheduler ${cluster_scheduler}"
         : ''
@@ -132,7 +125,6 @@ process BIGSTREAM {
     ${mk_local_transform_path}
     ${mk_local_inv_transform_path}
     ${mk_local_aligned_path}
-    ${mk_local_working_dir}
     python /app/bigstream/scripts/main_align_pipeline.py \
         ${global_steps_arg} \
         ${global_fixed_args} \
@@ -148,9 +140,7 @@ process BIGSTREAM {
         ${local_transform_name_arg} \
         ${local_inv_transform_name_arg} \
         ${local_aligned_name_arg} \
-        ${local_working_dir_arg} \
-        --blocks-partitionsize ${params.local_partitionsize} \
-        --overlap-factor ${params.local_overlap_factor} \
+        --blocks-overlap-factor ${params.local_overlap_factor} \
         --output-blocksize ${params.local_blocksize} \
         ${local_transform_blocksize_arg} \
         ${local_inv_transform_blocksize_arg} \

@@ -224,7 +224,6 @@ workflow BIGSTREAM_REGISTRATION {
             [
                 global_output,
                 local_output,
-                normalized_file_name(params.local_working_path),
             ],
         ]
         log.debug "Prepare cluster mounted paths: $it -> $r"

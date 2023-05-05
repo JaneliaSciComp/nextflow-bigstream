@@ -12,7 +12,6 @@ process TRANSFORM_COORDS {
         parentfile(input_coords_volume, 1),
         parentfile(affine_transform, 1),
         parentfile(vector_field_transform_path, 1),
-        parentfile(params.local_working_path, 2),
         parentfile(params.dask_config, 1)]) }
 
     memory { "${mem_gb} GB" }
@@ -67,12 +66,6 @@ process TRANSFORM_COORDS {
         ? "--partition-size ${params.warp_coords_partitionsize}"
         : ''
 
-    def mk_working_dir = params.local_working_path
-        ? "mkdir -p ${normalized_file_name(params.local_working_path)}"
-        : ''
-    def working_dir_arg = params.local_working_path
-        ? "--working-dir ${normalized_file_name(params.local_working_path)}"
-        : ''
     def scheduler_arg = cluster_scheduler
         ? "--dask-scheduler ${cluster_scheduler}"
         : ''
@@ -82,7 +75,6 @@ process TRANSFORM_COORDS {
     """
     umask 0002
     mkdir -p ${warped_coords_dir}
-    ${mk_working_dir}
     python /app/bigstream/scripts/main_apply_transform_coords.py \
         --input-coords ${input_coords} \
         --output-coords ${warped_coords} \
@@ -93,7 +85,6 @@ process TRANSFORM_COORDS {
         ${affine_transforms_arg} \
         ${vector_field_transform_arg} \
         ${vector_field_transform_subpath_arg} \
-        ${working_dir_arg} \
         ${coords_partitionsize_arg} \
         ${scheduler_arg} \
         ${dask_config_arg}

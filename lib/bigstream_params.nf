@@ -20,7 +20,6 @@ def bigstream_params() {
         // global volume computation resources
         bigstream_global_cpus: 1,
         bigstream_global_mem_gb: 2,
-        local_working_path: '',
         local_steps: '', // use ransac,deform to align the chunked volume
         local_partitionsize: 128, // processing blocksize for parallelization
         local_overlap_factor: 0.5,
