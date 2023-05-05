@@ -4,7 +4,7 @@ def bigstream_params() {
         dask_config: '',
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
-        global_blocksize: 128, // output block size for global volume
+        global_blocksize: '128,128,128', // output block size for global volume
         global_ransac_num_sigma_max: 15,
         global_ransac_cc_radius: 12,
         global_ransac_nspots: 5000,
@@ -21,7 +21,6 @@ def bigstream_params() {
         bigstream_global_cpus: 1,
         bigstream_global_mem_gb: 2,
         local_steps: '', // use ransac,deform to align the chunked volume
-        local_partitionsize: 128, // processing blocksize for parallelization
         local_overlap_factor: 0.5,
         local_blocksize: "128,128,128",  // output block (chunk) size for zarr or N5 arrays
         local_transform_blocksize: "32,32,32",  // output block (chunk) size for local deformation

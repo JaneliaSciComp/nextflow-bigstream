@@ -45,6 +45,6 @@ process GLOBAL_TRANSFORM {
         --moving ${moving_path} --moving-subpath ${moving_subpath} \
         --output ${output_path} ${output_subpath_arg} \
         ${transforms_arg} \
-        --output-chunk-size ${params.global_blocksize}
+        --output-blocksize ${params.global_blocksize}
     """
 }
