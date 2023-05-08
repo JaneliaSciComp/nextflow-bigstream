@@ -165,7 +165,6 @@ process BIGSTREAM {
         --local-smooth-sigmas ${params.local_smooth_sigmas} \
         --local-learning-rate ${params.local_learning_rate} \
         --local-iterations ${params.local_iterations} \
-        --local-write-group-interval ${params.local_write_group_interval} \
         --inv-iterations ${params.inv_iterations} \
         --inv-order ${params.inv_order} \
         --inv-sqrt-iterations ${params.inv_sqrt_iterations} \

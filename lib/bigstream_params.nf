@@ -25,7 +25,6 @@ def bigstream_params() {
         local_blocksize: "128,128,128",  // output block (chunk) size for zarr or N5 arrays
         local_transform_blocksize: "32,32,32",  // output block (chunk) size for local deformation
         local_inv_transform_blocksize: '',  // output block (chunk) size for local inverse deformation
-        local_write_group_interval: 30,
         local_ransac_num_sigma_max: 15,
         local_ransac_cc_radius: 12,
         local_ransac_nspots: 5000,
