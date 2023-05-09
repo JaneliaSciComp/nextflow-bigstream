@@ -13,7 +13,7 @@ RUN git clone https://github.com/GFleishman/ClusterWrap.git .
 WORKDIR /app/bigstream
 
 # install bigstream
-ENV BIGSTREAM_TAG=master
+ENV BIGSTREAM_TAG=main
 RUN git clone --branch $BIGSTREAM_TAG --depth 1 https://github.com/JaneliaSciComp/bigstream.git .
 
 COPY env.yaml .
