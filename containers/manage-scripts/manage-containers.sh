@@ -13,7 +13,7 @@ while [[ $# > 0 ]]; do
     shift # past the key
     case ${key} in
        build)
-           COMMAND="buildx build"
+           COMMAND="build"
            TAG_ARG="-t $TAG"
            CONTAINERS_DIR_ARG="containers/bigstream"
            ;;
