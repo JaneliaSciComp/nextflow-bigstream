@@ -14,6 +14,8 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
     take:
     align_input // [global_fixed, global_fixed_dataset,
                 //  global_moving, global_moving_dataset,
+                //  global_fixed_mask, global_fixed_mask_dataset,
+                //  global_moving_mask, global_moving_mask_dataset,
                 //  global_steps,
                 //  global_output,
                 //  global_transform_name,
@@ -26,6 +28,8 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
         log.info "Run global registration with: $it"
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
@@ -33,12 +37,16 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
         [
             normalized_file_name(global_fixed), global_fixed_dataset,
             normalized_file_name(global_moving), global_moving_dataset,
+            normalized_file_name(global_fixed_mask), global_fixed_mask_dataset,
+            normalized_file_name(global_moving_mask), global_moving_mask_dataset,
             global_steps,
             normalized_file_name(global_output),
             global_transform_name,
             global_aligned_name,
             '', '', // local_fixed, local_fixed_dataset,
             '', '', // local_moving, local_moving_dataset,
+            '', '', // local_fixed_mask, local_fixed_mask_dataset,
+            '', '', // local_moving_mask, local_moving_mask_dataset,
             '', // local_steps
             '', // local_output
             '', // local_transform_name,
@@ -60,11 +68,15 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_output,
              local_transform_name,
              local_inv_transform_name,
@@ -72,6 +84,8 @@ workflow GLOBAL_BIGSTREAM_ALIGN {
         [
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
+            global_fixed_mask, global_fixed_mask_dataset,
+            global_moving_mask, global_moving_mask_dataset,
             global_output,
             global_transform_name,
             global_aligned_name,

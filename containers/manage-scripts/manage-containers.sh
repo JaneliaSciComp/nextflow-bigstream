@@ -13,34 +13,34 @@ while [[ $# > 0 ]]; do
     shift # past the key
     case ${key} in
        build)
-            COMMAND=build
-            TAG_ARG="-t $TAG"
-            CONTAINERS_DIR_ARG="containers/bigstream"
-            ;;
+           COMMAND="buildx build"
+           TAG_ARG="-t $TAG"
+           CONTAINERS_DIR_ARG="containers/bigstream"
+           ;;
        push)
-            COMMAND=push
-            TAG_ARG=$TAG
-            ;;
+           COMMAND=push
+           TAG_ARG=$TAG
+           ;;
        --platform)
-            PLATFORM=$1
-            shift
-            PLATFORM_ARG="--platform=${PLATFORM}"
-            ;;
+           PLATFORM=$1
+           shift
+           PLATFORM_ARG="--platform ${PLATFORM}"
+           ;;
        -n)
-            RUNNER=echo
-            ;;
+           RUNNER=echo
+           ;;
        --help|-h)
-            echo ${helpmsg}
-            exit 1
-            ;;
-        *)
-            additional_args=($additional_args $key)
-            ;;
+           echo ${helpmsg}
+           exit 1
+           ;;
+       *)
+           additional_args=(${additional_args[@]} $key)
+           ;;
     esac
 done
 
 $RUNNER docker ${COMMAND} \
        ${PLATFORM_ARG} \
        ${TAG_ARG} \
-       ${CONTAINERS_DIR_ARG} \
-       ${additional_args[@]}
+       ${additional_args[@]} \
+       ${CONTAINERS_DIR_ARG}

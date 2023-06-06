@@ -27,12 +27,16 @@ workflow BIGSTREAM_REGISTRATION {
     take:
     registration_input // [global_fixed, global_fixed_dataset,
                        //  global_moving, global_moving_dataset,
+                       //  global_fixed_mask, global_fixed_mask_dataset
+                       //  global_moving_mask, global_moving_mask_dataset
                        //  global_steps,
                        //  global_output,
                        //  global_transform_name,
                        //  global_aligned_name,
                        //  local_fixed, local_fixed_dataset,
                        //  local_moving, local_moving_dataset,
+                       //  local_fixed_mask, local_fixed_mask_dataset
+                       //  local_moving_mask, local_moving_mask_dataset
                        //  local_steps,
                        //  local_output,
                        //  local_transform_name,
@@ -47,12 +51,16 @@ workflow BIGSTREAM_REGISTRATION {
         def (index, ri) = it
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -62,12 +70,16 @@ workflow BIGSTREAM_REGISTRATION {
             index,
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
+            global_fixed_mask, global_fixed_mask_dataset,
+            global_moving_mask, global_moving_mask_dataset,
             global_steps,
             global_output,
             global_transform_name,
             global_aligned_name,
             local_fixed, local_fixed_dataset,
             local_moving, local_moving_dataset,
+            local_fixed_mask, local_fixed_mask_dataset,
+            local_moving_mask, local_moving_mask_dataset,
             local_steps,
             local_output,
             local_transform_name,
@@ -83,12 +95,16 @@ workflow BIGSTREAM_REGISTRATION {
         def (index,
              global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -126,12 +142,16 @@ workflow BIGSTREAM_REGISTRATION {
         [
             normalized_file_name(global_fixed), global_fixed_dataset,
             normalized_file_name(global_moving), global_moving_dataset,
+            normalized_file_name(global_fixed_mask), global_fixed_mask_dataset,
+            normalized_file_name(global_moving_mask), global_moving_mask_dataset,
             global_steps,
             normalized_file_name(global_output),
             global_transform_name,
             global_aligned_name,
             normalized_file_name(local_fixed), local_fixed_dataset,
             normalized_file_name(local_moving), local_moving_dataset,
+            normalized_file_name(local_fixed_mask), local_fixed_mask_dataset,
+            normalized_file_name(local_moving_mask), local_moving_mask_dataset,
             local_steps,
             normalized_local_output,
             local_transform_name,
@@ -145,12 +165,16 @@ workflow BIGSTREAM_REGISTRATION {
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -159,6 +183,8 @@ workflow BIGSTREAM_REGISTRATION {
         def r = [
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
+            global_fixed_mask, global_fixed_mask_dataset,
+            global_moving_mask, global_moving_mask_dataset,
             global_steps,
             global_output,
             global_transform_name,
@@ -175,16 +201,20 @@ workflow BIGSTREAM_REGISTRATION {
     }
 
     def local_inputs = normalized_inputs
-    | join(global_alignment_results, by:[0,1,2,3])
+    | join(global_alignment_results, by:[0,1,2,3,4,5,6,7])
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -193,6 +223,8 @@ workflow BIGSTREAM_REGISTRATION {
         def r = [
             local_fixed, local_fixed_dataset,
             local_moving, local_moving_dataset,
+            local_fixed_mask, local_fixed_mask_dataset,
+            local_moving_mask, local_moving_mask_dataset,
             local_steps,
             local_output,
             local_transform_name,
@@ -210,6 +242,8 @@ workflow BIGSTREAM_REGISTRATION {
     | map {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -219,7 +253,7 @@ workflow BIGSTREAM_REGISTRATION {
              global_transform_name) = it
         def r = [
             [
-                local_fixed, local_moving,
+                local_fixed, local_moving, local_fixed_mask, local_moving_mask,
             ],
             [
                 global_output,
@@ -252,12 +286,16 @@ workflow BIGSTREAM_REGISTRATION {
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -267,6 +305,8 @@ workflow BIGSTREAM_REGISTRATION {
         [
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_output,
              local_transform_name,
              local_inv_transform_name,
@@ -276,10 +316,12 @@ workflow BIGSTREAM_REGISTRATION {
              deform_inputs
         ]
     }
-    | join(local_alignment_results, by:[0,1,2,3,4,5,6,7,8,9])
+    | join(local_alignment_results, by:[0,1,2,3,4,5,6,7,8,9,10,11,12,13])
     | flatMap {
         def (local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_output,
              local_transform_name,
              local_inv_transform_name,
@@ -323,12 +365,12 @@ workflow BIGSTREAM_REGISTRATION {
                                 // based on how the input was created
     | map {
         def (fixed_path, fixed_subpath,
-             moving_path, moving_subpath,
-             output_path, output_subpath,
+             grouped_moving_path, grouped_moving_subpath,
+             grouped_output_path, grouped_output_subpath,
              cluster_scheduler, cluster_workdir) = it
         def deformed_results = [
-            moving_path, moving_subpath,
-            output_path, output_subpath,
+            grouped_moving_path, grouped_moving_subpath,
+            grouped_output_path, grouped_output_subpath,
         ]
         def r = [
             fixed_path, fixed_subpath,
@@ -345,12 +387,16 @@ workflow BIGSTREAM_REGISTRATION {
     | map {
         def (global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_steps,
              global_output,
              global_transform_name,
              global_aligned_name,
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_steps,
              local_output,
              local_transform_name,
@@ -360,12 +406,16 @@ workflow BIGSTREAM_REGISTRATION {
         [
              local_fixed, local_fixed_dataset,
              local_moving, local_moving_dataset,
+             local_fixed_mask, local_fixed_mask_dataset,
+             local_moving_mask, local_moving_mask_dataset,
              local_output,
              local_transform_name,
              local_inv_transform_name,
              local_aligned_name,
              global_fixed, global_fixed_dataset,
              global_moving, global_moving_dataset,
+             global_fixed_mask, global_fixed_mask_dataset,
+             global_moving_mask, global_moving_mask_dataset,
              global_output,
              global_transform_name,
              global_aligned_name,
@@ -376,12 +426,16 @@ workflow BIGSTREAM_REGISTRATION {
         def(
             local_fixed, local_fixed_dataset,
             local_moving, local_moving_dataset,
+            local_fixed_mask, local_fixed_mask_dataset,
+            local_moving_mask, local_moving_mask_dataset,
             local_output,
             local_transform_name,
             local_inv_transform_name,
             local_aligned_name,
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
+            global_fixed_mask, global_fixed_mask_dataset,
+            global_moving_mask, global_moving_mask_dataset,
             global_output,
             global_transform_name,
             global_aligned_name,
@@ -390,11 +444,15 @@ workflow BIGSTREAM_REGISTRATION {
         def r = [
             global_fixed, global_fixed_dataset,
             global_moving, global_moving_dataset,
+            global_fixed_mask, global_fixed_mask_dataset,
+            global_moving_mask, global_moving_mask_dataset,
             global_output,
             global_transform_name,
             global_aligned_name,
             local_fixed, local_fixed_dataset,
             local_moving, local_moving_dataset,
+            local_fixed_mask, local_fixed_mask_dataset,
+            local_moving_mask, local_moving_mask_dataset,
             local_output,
             local_transform_name,
             local_inv_transform_name,
