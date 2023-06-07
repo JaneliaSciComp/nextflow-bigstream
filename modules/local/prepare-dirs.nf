@@ -19,12 +19,10 @@ process PREPARE_DIRS {
     val(alldirsres)
 
     script:
-    def alldirs = inputdirs + outputdirs
-    def dirs = alldirs.collect { normalized_file_name(it) }
-                .findAll { it ? true : false }
-                .inject '', {acc, val -> 
-                    acc ? "${acc} ${val}" : val
-                }
+    def alldirs = cleandirs(inputdirs) + cleandirs(outputdirs)
+    def dirs = alldirs.inject '', {acc, val -> 
+        acc ? "${acc} ${val}" : val
+    }
     alldirsres = alldirs
     """
     echo "Create directories: ${dirs}"
@@ -52,4 +50,9 @@ def combine_dirs(inputdirs, outputdirs) {
                     }
     log.debug "Combined dirs: $alldirs"
     alldirs
+}
+
+def cleandirs(dirs) {
+    dirs.collect { normalized_file_name(it) }
+        .findAll { it ? true : false }
 }
