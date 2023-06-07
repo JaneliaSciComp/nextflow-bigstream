@@ -253,7 +253,8 @@ workflow BIGSTREAM_REGISTRATION {
              global_transform_name) = it
         def r = [
             [
-                local_fixed, local_moving, local_fixed_mask, local_moving_mask,
+                file(local_fixed).parent, file(local_moving).parent,
+                file(local_fixed_mask).parent, file(local_moving_mask).parent,
             ],
             [
                 global_output,
