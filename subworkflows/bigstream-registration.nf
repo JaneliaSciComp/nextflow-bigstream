@@ -19,8 +19,9 @@ include {
 } from '../modules/local/local-transform'
 
 include {
+    index_channel;
     normalized_file_name;
-    index_channel
+    parentfile;
 } from '../lib/utils'
 
 workflow BIGSTREAM_REGISTRATION {
@@ -253,8 +254,10 @@ workflow BIGSTREAM_REGISTRATION {
              global_transform_name) = it
         def r = [
             [
-                file(local_fixed).parent, file(local_moving).parent,
-                file(local_fixed_mask).parent, file(local_moving_mask).parent,
+                parentfile(local_fixed, 1),
+                parentfile(local_moving, 1),
+                parentfile(local_fixed_mask, 1),
+                parentfile(local_moving_mask, 1),
             ],
             [
                 global_output,
