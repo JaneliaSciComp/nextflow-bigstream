@@ -1,6 +1,6 @@
 def bigstream_params() {
     [
-        bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.0',
+        bigstream_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.1',
         dask_config: '',
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
