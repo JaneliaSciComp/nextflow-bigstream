@@ -463,7 +463,7 @@ workflow BIGSTREAM_REGISTRATION {
             local_aligned_name,
             deformed_results,
         ]
-        log.debug "Final results $it -> $r"
+        log.debug "Final bigstream-registration results $it -> $r"
         r
     }
 
