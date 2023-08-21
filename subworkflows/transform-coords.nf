@@ -37,7 +37,7 @@ workflow TRANSFORM_COORDS {
              downsampling_factors,
              coords_volume,
              coords_dataset) = ci
-        [
+        def r = [
             index,
             normalized_file_name(coords_file),
             normalized_file_name(warped_coords_file),
@@ -46,6 +46,8 @@ workflow TRANSFORM_COORDS {
             normalized_file_name(coords_volume),
             coords_dataset
         ]
+        log.debug "Indexed coords to transform $it -> $r"
+        r
     }
     def indexed_transforms = index_channel(transforms)
     | map {
@@ -53,18 +55,22 @@ workflow TRANSFORM_COORDS {
         def (affine,
              vector_field_deform,
              vector_field_deform_dataset) = ti
-        [
+        def r = [
             index,
             normalized_file_name(affine),
             normalized_file_name(vector_field_deform),
             vector_field_deform_dataset,
         ]
+        log.debug "Indexed transforms to use $it -> $r"
+        r
     }
+
+    def cluster_info = ['', '']
 
     def transform_coords_results = TRANSFORM_COORDS_MODULE(
         indexed_coords_input.map { it[1..-1] },
         indexed_transforms.map { it[1..-1] },
-        Channel.of(['', '']),
+        cluster_info,
         params.warp_coords_cpus,
         params.warp_coords_mem_gb,
     )

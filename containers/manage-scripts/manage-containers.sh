@@ -26,6 +26,8 @@ while [[ $# > 0 ]]; do
             PLATFORM_ARG="--platform ${PLATFORM}"
             ;;
         -t)
+	    TAG=$1
+	    shift
             TAG_ARG="-t $TAG $TAG_ARG"
             ;;
         -n)
