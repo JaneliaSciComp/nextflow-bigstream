@@ -16,7 +16,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
                 //  local_steps,
                 //  local_output,
                 //  local_transform_name,
+                //  local_transform_dataset,
                 //  local_inv_transform_name,
+                //  local_inv_transform_dataset,
                 //  local_aligned_name
                 //  global_transform_dir,
                 //  global_transform_name]
@@ -32,7 +34,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
              local_steps,
              local_output,
              local_transform_name,
+             local_transform_dataset,
              local_inv_transform_name,
+             local_inv_transform_dataset,
              local_aligned_name,
              global_transform_dir,
              global_transform_name) = it
@@ -52,7 +56,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
             local_steps,
             normalized_file_name(local_output),
             local_transform_name,
+            local_transform_dataset,
             local_inv_transform_name,
+            local_inv_transform_dataset,
             local_aligned_name,
         ]
     }
@@ -78,7 +84,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
              local_moving_mask, local_moving_mask_dataset,
              local_output,
              local_transform_name,
+             local_transform_dataset,
              local_inv_transform_name,
+             local_inv_transform_dataset,
              local_aligned_name,
              cluster_scheduler,
              cluster_workdir) = it
@@ -89,7 +97,9 @@ workflow LOCAL_BIGSTREAM_ALIGN {
             local_moving_mask, local_moving_mask_dataset,
             local_output,
             local_transform_name,
+            local_transform_dataset,
             local_inv_transform_name,
+            local_inv_transform_dataset,
             local_aligned_name,
             global_output,
             global_transform_name,

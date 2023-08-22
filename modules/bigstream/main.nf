@@ -38,8 +38,8 @@ process BIGSTREAM {
           val(local_moving_mask_path), val(local_moving_mask_subpath),
           val(local_steps), // local steps
           val(local_output_path),
-          val(local_transform_name),
-          val(local_inv_transform_name),
+          val(local_transform_name), val(local_transform_dataset),
+          val(local_inv_transform_name), val(local_inv_transform_dataset),
           val(local_aligned_name)
 
     val(global_use_existing_transform)
@@ -64,8 +64,8 @@ process BIGSTREAM {
           val(local_fixed_mask_path), val(local_fixed_mask_subpath),
           val(local_moving_mask_path), val(local_moving_mask_subpath),
           val(local_output_path),
-          val(local_transform_name),
-          val(local_inv_transform_name),
+          val(local_transform_name), val(local_transform_dataset),
+          val(local_inv_transform_name), val(local_inv_transform_dataset),
           val(local_aligned_name),
           val(cluster_scheduler), val(cluster_workdir)
 
@@ -155,11 +155,17 @@ process BIGSTREAM {
     def local_transform_name_arg = local_transform_name
         ? "--local-transform-name ${local_transform_name}"
         : ''
+    def local_transform_subpath_arg = local_transform_dataset
+        ? "--local-transform-subpath ${local_transform_dataset}"
+        : ''
     def local_transform_blocksize_arg = params.local_transform_blocksize
         ? "--local-transform-blocksize ${params.local_transform_blocksize}"
         : ''
     def local_inv_transform_name_arg = local_inv_transform_name
         ? "--local-inv-transform-name ${local_inv_transform_name}"
+        : ''
+    def local_inv_transform_subpath_arg = local_inv_transform_dataset
+        ? "--local-inv-transform-subpath ${local_inv_transform_dataset}"
         : ''
     def local_inv_transform_blocksize_arg = params.local_inv_transform_blocksize
         ? "--local-inv-transform-blocksize ${params.local_inv_transform_blocksize}"
@@ -226,7 +232,9 @@ process BIGSTREAM {
         ${local_moving_mask_subpath_arg} \
         ${local_output_arg} \
         ${local_transform_name_arg} \
+        ${local_transform_subpath_arg} \
         ${local_inv_transform_name_arg} \
+        ${local_inv_transform_subpath_arg} \
         ${local_aligned_name_arg} \
         --blocks-overlap-factor ${params.local_overlap_factor} \
         --output-blocksize ${params.local_blocksize} \
