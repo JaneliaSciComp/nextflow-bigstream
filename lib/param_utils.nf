@@ -31,7 +31,9 @@ def input_params() {
         local_moving_mask_path: '',
         local_moving_mask_subpath: '',
         local_transform_name: '',
+        local_transform_subpath: '',
         local_inv_transform_name: '',
+        local_inv_transform_subpath: '',
         local_aligned_name: '',
     ]
 }
