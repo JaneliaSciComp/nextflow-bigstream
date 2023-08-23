@@ -247,6 +247,10 @@ process BIGSTREAM {
         --global-ransac-diagonal-constraint ${params.global_ransac_diagonal_constraint} \
         --global-ransac-match-threshold ${params.global_ransac_match_threshold} \
         --global-ransac-align-threshold ${params.global_ransac_align_threshold} \
+        --global-ransac-fix-spot-detection-threshold ${params.global_ransac_fix_spot_detection_threshold} \
+        --global-ransac-fix-spot-detection-threshold-rel ${params.global_ransac_fix_spot_detection_threshold_rel} \
+        --global-ransac-mov-spot-detection-threshold ${params.global_ransac_mov_spot_detection_threshold} \
+        --global-ransac-mov-spot-detection-threshold-rel ${params.global_ransac_mov_spot_detection_threshold_rel} \
         --global-ransac-blob-sizes ${params.global_ransac_blob_sizes} \
         --global-smooth-sigmas ${params.global_smooth_sigmas} \
         --global-learning-rate ${params.global_learning_rate} \
@@ -263,6 +267,10 @@ process BIGSTREAM {
         --local-ransac-diagonal-constraint ${params.local_ransac_diagonal_constraint} \
         --local-ransac-match-threshold ${params.local_ransac_match_threshold} \
         --local-ransac-align-threshold ${params.local_ransac_align_threshold} \
+        --local-ransac-fix-spot-detection-threshold ${params.local_ransac_fix_spot_detection_threshold} \
+        --local-ransac-fix-spot-detection-threshold-rel ${params.local_ransac_fix_spot_detection_threshold_rel} \
+        --local-ransac-mov-spot-detection-threshold ${params.local_ransac_mov_spot_detection_threshold} \
+        --local-ransac-mov-spot-detection-threshold-rel ${params.local_ransac_mov_spot_detection_threshold_rel} \
         --local-ransac-blob-sizes ${params.local_ransac_blob_sizes} \
         --local-smooth-sigmas ${params.local_smooth_sigmas} \
         --local-learning-rate ${params.local_learning_rate} \
