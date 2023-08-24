@@ -249,8 +249,10 @@ process BIGSTREAM {
         --global-ransac-align-threshold ${params.global_ransac_align_threshold} \
         --global-ransac-fix-spot-detection-threshold ${params.global_ransac_fix_spot_detection_threshold} \
         --global-ransac-fix-spot-detection-threshold-rel ${params.global_ransac_fix_spot_detection_threshold_rel} \
+        --global-ransac-fix-spot-winsorize-limits ${params.global_ransac_fix_spot_winsorize_limits} \
         --global-ransac-mov-spot-detection-threshold ${params.global_ransac_mov_spot_detection_threshold} \
         --global-ransac-mov-spot-detection-threshold-rel ${params.global_ransac_mov_spot_detection_threshold_rel} \
+        --global-ransac-mov-spot-winsorize-limits ${params.global_ransac_mov_spot_winsorize_limits} \
         --global-ransac-blob-sizes ${params.global_ransac_blob_sizes} \
         --global-ransac-fix-spots-count-threshold ${params.global_ransac_fix_spots_count_threshold} \
         --global-ransac-mov-spots-count-threshold ${params.global_ransac_mov_spots_count_threshold} \
@@ -272,8 +274,10 @@ process BIGSTREAM {
         --local-ransac-align-threshold ${params.local_ransac_align_threshold} \
         --local-ransac-fix-spot-detection-threshold ${params.local_ransac_fix_spot_detection_threshold} \
         --local-ransac-fix-spot-detection-threshold-rel ${params.local_ransac_fix_spot_detection_threshold_rel} \
+        --local-ransac-fix-spot-winsorize-limits ${params.local_ransac_fix_spot_winsorize_limits} \
         --local-ransac-mov-spot-detection-threshold ${params.local_ransac_mov_spot_detection_threshold} \
         --local-ransac-mov-spot-detection-threshold-rel ${params.local_ransac_mov_spot_detection_threshold_rel} \
+        --local-ransac-mov-spot-winsorize-limits ${params.local_ransac_mov_spot_winsorize_limits} \
         --local-ransac-blob-sizes ${params.local_ransac_blob_sizes} \
         --local-ransac-fix-spots-count-threshold ${params.local_ransac_fix_spots_count_threshold} \
         --local-ransac-mov-spots-count-threshold ${params.local_ransac_mov_spots_count_threshold} \
