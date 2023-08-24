@@ -5,7 +5,7 @@ def bigstream_params() {
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
         global_blocksize: '128,128,128', // output block size for global volume
-        global_ransac_num_sigma_max: 15,
+        global_ransac_num_sigma_max: 7,
         global_ransac_cc_radius: 12,
         global_ransac_nspots: 5000,
         global_ransac_diagonal_constraint: 0.75,
@@ -40,7 +40,7 @@ def bigstream_params() {
         local_blocksize: "128,128,128",  // output block (chunk) size for zarr or N5 arrays
         local_transform_blocksize: "32,32,32",  // output block (chunk) size for local deformation
         local_inv_transform_blocksize: '',  // output block (chunk) size for local inverse deformation
-        local_ransac_num_sigma_max: 15,
+        local_ransac_num_sigma_max: 7,
         local_ransac_cc_radius: 12,
         local_ransac_nspots: 5000,
         local_ransac_diagonal_constraint: 0.75,
