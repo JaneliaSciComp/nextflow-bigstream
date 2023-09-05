@@ -106,7 +106,9 @@ process BIGSTREAM {
     def global_aligned_name_arg = global_aligned_name
         ? "--global-aligned-name ${global_aligned_name}"
         : ''
-
+    def global_local_ransac_spot_detection_arg = params.global_ransac_spot_detection_method
+        ? "--global-ransac-spot-detection-method ${params.global_ransac_spot_detection_method}"
+        : ''
     def global_metric_arg = params.global_metric
         ? "--global-metric ${params.global_metric}" : ''
     def global_optimizer_arg = params.global_optimizer
@@ -173,7 +175,9 @@ process BIGSTREAM {
     def local_aligned_name_arg = local_aligned_name
         ? "--local-aligned-name ${local_aligned_name}"
         : ''
-
+    def local_local_ransac_spot_detection_arg = params.local_ransac_spot_detection_method
+        ? "--local-ransac-spot-detection-method ${params.local_ransac_spot_detection_method}"
+        : ''
     def local_metric_arg = params.local_metric
         ? "--local-metric ${params.local_metric}" : ''
     def local_optimizer_arg = params.local_optimizer
@@ -241,6 +245,7 @@ process BIGSTREAM {
         ${local_transform_blocksize_arg} \
         ${local_inv_transform_blocksize_arg} \
         --global-shrink-factors ${params.global_shrink_factors} \
+        ${global_local_ransac_spot_detection_arg} \
         --global-ransac-num-sigma-max ${params.global_ransac_num_sigma_max} \
         --global-ransac-cc-radius ${params.global_ransac_cc_radius} \
         --global-ransac-nspots ${params.global_ransac_nspots} \
@@ -266,6 +271,7 @@ process BIGSTREAM {
         ${global_interpolator_arg} \
         ${global_sampling_percentage_arg} \
         ${global_alignment_spacing_arg} \
+        ${local_local_ransac_spot_detection_arg} \
         --local-ransac-num-sigma-max ${params.local_ransac_num_sigma_max} \
         --local-ransac-cc-radius ${params.local_ransac_cc_radius} \
         --local-ransac-nspots ${params.local_ransac_nspots} \
