@@ -4,7 +4,7 @@ helpmsg="$0
 
 RUNNER=
 
-TAG_ARG="-t registry.int.janelia.org/multifish/bigstream-dask:1.1"
+TAG_ARG="-t registry.int.janelia.org/multifish/bigstream-dask:1.2"
 
 additional_args=()
 
