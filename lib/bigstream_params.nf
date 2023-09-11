@@ -80,6 +80,7 @@ def bigstream_params() {
         deform_local_cpus: 1,
         deform_local_mem_gb: 1,
         warp_coords_partitionsize: 0,
+        warp_coords_processingblock: '',
         warp_coords_cpus: 1,
         warp_coords_mem_gb: 1,
     ]

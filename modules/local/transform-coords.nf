@@ -62,10 +62,12 @@ process TRANSFORM_COORDS {
     def vector_field_transform_subpath_arg = vector_field_transform_subpath
         ? "--vector-field-transform-subpath ${vector_field_transform_subpath}"
         : ''
+    def coords_processingblock_arg = params.warp_coords_processingblock
+        ? "--processing-blocksize ${params.warp_coords_processingblock}"
+        : ''
     def coords_partitionsize_arg = params.warp_coords_partitionsize > 0
         ? "--partition-size ${params.warp_coords_partitionsize}"
         : ''
-
     def scheduler_arg = cluster_scheduler
         ? "--dask-scheduler ${cluster_scheduler}"
         : ''
@@ -85,6 +87,7 @@ process TRANSFORM_COORDS {
         ${affine_transforms_arg} \
         ${vector_field_transform_arg} \
         ${vector_field_transform_subpath_arg} \
+        ${coords_processingblock_arg} \
         ${coords_partitionsize_arg} \
         ${scheduler_arg} \
         ${dask_config_arg}

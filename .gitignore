@@ -3,6 +3,9 @@
 *.swp
 *~
 
+# IDE
+.vscode
+
 # Nextflow working dirs
 .nextflow*
 work
