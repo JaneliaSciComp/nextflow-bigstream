@@ -1,34 +1,25 @@
 helpmsg="$0
-    build|push|--help
+    <command>{build|mp-build|push|--help}
+    [-n]
+    containers/bigstream
 "
 
 RUNNER=
 
-TAG_ARG="-t registry.int.janelia.org/multifish/bigstream-dask:1.2"
+VERSION=1.2
+DOCKERHUB_TAG=multifish/bigstream-dask:${VERSION}
+INTERNAL_TAG=registry.int.janelia.org/multifish/bigstream-dask:${VERSION}
+ECR_TAG=public.ecr.aws/janeliascicomp/multifish/bigstream-dask:${VERSION}
 
-additional_args=()
+args=()
 
 while [[ $# > 0 ]]; do
     key="$1"
     shift # past the key
     case ${key} in
-        build)
-            COMMAND="build"
-            CONTAINERS_DIR_ARG="containers/bigstream"
-            ;;
-        push)
-            COMMAND=push
-            TAG_ARG=$TAG
-            ;;
-        --platform)
-            PLATFORM=$1
+        -cmd)
+            COMMAND=$1
             shift
-            PLATFORM_ARG="--platform ${PLATFORM}"
-            ;;
-        -t)
-	    TAG=$1
-	    shift
-            TAG_ARG="-t $TAG $TAG_ARG"
             ;;
         -n)
             RUNNER=echo
@@ -38,13 +29,50 @@ while [[ $# > 0 ]]; do
             exit 1
             ;;
         *)
-            additional_args=(${additional_args[@]} $key)
+            args=(${args[@]} $key)
             ;;
     esac
 done
 
-$RUNNER docker ${COMMAND} \
-       ${PLATFORM_ARG} \
-       ${TAG_ARG} \
-       ${additional_args[@]} \
-       ${CONTAINERS_DIR_ARG}
+function display_tags {
+    echo "AWS ECR: ${ECR_TAG}"
+    echo "DockerIO: ${DOCKERHUB_TAG}"
+    echo "Internal: ${INTERNAL_TAG}"
+}
+
+function docker_build {
+    $RUNNER docker build \
+            --platform linux/amd64 \
+            $*
+}
+
+function docker_multiplatform_build {
+    $RUNNER docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --push \
+            $*
+}
+
+function docker_push {
+    $RUNNER docker push \
+            $*
+}
+
+case ${COMMAND} in
+    build)
+        docker_build ${args[@]}
+        ;;
+    mp-build)
+        docker_multiplatform_build ${args[@]}
+        ;;
+    push)
+        docker_push ${args[@]}
+        ;;
+    display-tags)
+        display_tags
+        ;;
+    *)
+        echo ${helpmsg}
+        exit 1
+        ;;
+esac

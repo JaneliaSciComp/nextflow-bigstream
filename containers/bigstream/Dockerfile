@@ -1,14 +1,10 @@
 # Create final image
 FROM janeliascicomp/dask:2023.8.1
+ARG TARGETPLATFORM
 
 RUN dnf install -y \
         git \
         mesa-libGL
-
-WORKDIR /app/clusterlib
-
-# install cluster decorator
-RUN git clone https://github.com/GFleishman/ClusterWrap.git .
 
 WORKDIR /app/bigstream
 
@@ -23,7 +19,4 @@ RUN echo "Remove test data from the container" && rm -rf resources && rm -rf .gi
 # Use the base environment from the baseImage
 RUN mamba env update -n base -f env.yaml
 
-RUN cd /app/clusterlib \
- && pip install . \
- && cd /app/bigstream \
- && pip install .
+RUN pip install .
