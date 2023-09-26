@@ -5,7 +5,7 @@ include {
 def dask_params() {
     default_dask_params() +
     [
-        dask_container: 'registry.int.janelia.org/multifish/bigstream-dask:1.2',
+        dask_container: 'public.ecr.aws/janeliascicomp/multifish/bigstream-dask:1.2',
         with_dask_cluster: true,
     ]
 }
