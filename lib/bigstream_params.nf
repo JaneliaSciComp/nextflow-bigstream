@@ -1,6 +1,6 @@
 def bigstream_params() {
     [
-        bigstream_container: 'public.ecr.aws/janeliascicomp/multifish/bigstream-dask:1.2',
+        bigstream_container: 'docker.io/janeliascicomp/bigstream:1.2.9-dask2023.10.1-py11',
         dask_config: '',
         use_existing_global_transform: false, // if global transform already exists use it
         global_steps: '', // use 'ransac,affine' to align the global volume
@@ -14,10 +14,10 @@ def bigstream_params() {
         global_ransac_align_threshold: 2.0,
         global_ransac_fix_spot_detection_threshold: 0.001,
         global_ransac_fix_spot_detection_threshold_rel: 0.05,
-        global_ransac_fix_spot_winsorize_limits: '',
+        global_ransac_fix_spot_winsorize_limits: '0,0.1',
         global_ransac_mov_spot_detection_threshold: 0.001,
         global_ransac_mov_spot_detection_threshold_rel: 0.05,
-        global_ransac_mov_spot_winsorize_limits: '',
+        global_ransac_mov_spot_winsorize_limits: '0,0.1',
         global_ransac_blob_sizes: '6,20',
         global_ransac_fix_spots_count_threshold: 100,
         global_ransac_mov_spots_count_threshold: 100,
@@ -50,10 +50,10 @@ def bigstream_params() {
         local_ransac_align_threshold: 2,
         local_ransac_fix_spot_detection_threshold: 0.0001,
         local_ransac_fix_spot_detection_threshold_rel: 0.01,
-        local_ransac_fix_spot_winsorize_limits: '',
+        local_ransac_fix_spot_winsorize_limits: '0,0.1',
         local_ransac_mov_spot_detection_threshold: 0.0001,
         local_ransac_mov_spot_detection_threshold_rel: 0.01,
-        local_ransac_mov_spot_winsorize_limits: '',
+        local_ransac_mov_spot_winsorize_limits: '0,0.1',
         local_ransac_blob_sizes: '6,20',
         local_ransac_fix_spots_count_threshold: 100,
         local_ransac_mov_spots_count_threshold: 100,
